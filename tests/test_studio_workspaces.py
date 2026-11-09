@@ -82,6 +82,23 @@ def test_create_demo_then_switch_keeps_the_token(empty_studio: StudioServer) -> 
     assert status == 409 and b"already exists" in raw
 
 
+def test_a_preview_does_not_survive_a_workspace_switch(empty_studio: StudioServer) -> None:
+    assert create(empty_studio, kind="demo", name="first")["state"] == "done"
+    body = {"name": "bang", "positives": ["wow!!!", "yes!!!"], "negatives": ["wow...", "yes..."]}
+    status, _, raw = call(empty_studio, "POST", "/api/direction/preview", body)
+    assert status == 202
+    plan = wait(empty_studio, json.loads(raw)["job_id"])["result"]
+    kept = empty_studio.state._plans[plan["plan_id"]]
+    assert create(empty_studio, kind="demo", name="second")["state"] == "done"  # switches to "second"
+    # Switching drops the previews measured on the other workspace...
+    assert call(empty_studio, "POST", "/api/plans/apply", {"plan_id": plan["plan_id"]})[0] == 400
+    # ...and a preview that is still around is refused all the same: its workspace is checked, not just the head.
+    empty_studio.state._plans[plan["plan_id"]] = kept
+    status, _, raw = call(empty_studio, "POST", "/api/plans/apply", {"plan_id": plan["plan_id"]})
+    assert status == 409 and b"another workspace" in raw
+    assert json.loads(call(empty_studio, "GET", "/api/history")[2])["commits"] == []
+
+
 def test_routes_refuse_paths(empty_studio: StudioServer) -> None:
     for body in ({"id": "../../etc"}, {"id": "C:\\Windows"}, {"id": "0" * 16}):
         assert call(empty_studio, "POST", "/api/workspaces/open", body)[0] == 400

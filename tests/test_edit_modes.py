@@ -135,6 +135,10 @@ def test_csv_import_and_validation() -> None:
            "The capital of Exampleland is, Newtown, Oldtown,Exampleland,Exampleland's capital is|Capital of Exampleland:,The capital of France is\n"
     facts = parse_facts_csv(text)
     assert facts[0].subject == "Exampleland" and len(facts[0].paraphrases) == 2 and facts[0].neighbours
+    # The answers keep their leading space: real tokenizers start the answer word with it (" Newtown").
+    assert facts[0].new_object == " Newtown" and facts[0].old_object == " Oldtown"
+    quoted = parse_facts_csv('prompt,new_object\n"The capital of Exampleland is"," Newtown"\n')
+    assert quoted[0].new_object == " Newtown"
     with pytest.raises(ValueError, match="header"):
         parse_facts_csv("question,answer\nq,a\n")
     with pytest.raises(ValueError, match="row 2"):
@@ -144,6 +148,17 @@ def test_csv_import_and_validation() -> None:
     many = "prompt,new_object\n" + "".join(f"p{i},o\n" for i in range(40))
     with pytest.raises(ValueError, match="at most 32"):
         parse_facts_csv(many)
+
+
+def test_the_answer_spacing_follows_the_model(demo: tuple) -> None:
+    loaded, repo, _ = demo
+    # The toy model continues "or" with a space and "ab x" without one (measured on toy:qwen3_8 with the demo defect).
+    spaced = Fact(prompt="or", new_object="z", neighbours=["hello world"])
+    unspaced = Fact(prompt="ab x", new_object="y", neighbours=["hello world"])
+    rep = plan_fact_edit(loaded, repo, FactBatch(batch_id="sp", facts=[spaced, unspaced], constraints=TOY_FACT_LIMITS),
+                         "sp").report
+    assert [f["new_object"] for f in rep["facts"]] == [" z", "y"]
+    assert any("leading space" in n and "fact 1" in n for n in rep["notes"])
 
 
 def test_subject_key_position(tokenizer: object) -> None:
@@ -168,6 +183,36 @@ def test_direction_layers_kl_shift_and_commit(demo: tuple) -> None:
     assert repo.load_manifest(patch_id).intent_id == "direction-bang"
     _, restored = checkout(ws, "ROOT")
     assert _same(original, _snapshot(restored.model))
+
+
+def test_direction_edit_stays_in_its_columns_and_reports_true_counts(demo: tuple) -> None:
+    loaded, repo, _ = demo
+    spec = DirectionSpec(name="bang", positives=["wow!!!", "yes!!!", "go!!!"], negatives=["wow...", "yes...", "go..."],
+                         constraints=TOY_LIMITS)
+    plan = plan_direction_edit(loaded, repo, spec, "d2")
+    rep = plan.report
+    (name, delta), = plan.deltas.items()
+    touched = torch.nonzero(delta.abs().sum(dim=0) > 0).reshape(-1).tolist()
+    assert touched and set(touched) <= set(rep["columns"])  # the nullspace correction stays in the budgeted columns
+    assert int((delta != 0).sum()) <= rep["weights_targeted"]  # the reported count covers every changed weight
+    assert torch.equal(plan.structural[name], delta)  # the manifest counts what is committed
+    # The general prompts' main input directions inside those columns are still protected.
+    from libweightspace.prober import capture_linear_inputs
+
+    acts = capture_linear_inputs(loaded.model, loaded.tokenizer, spec.general_prompts, [name])[name]
+    cols = torch.tensor(rep["columns"])
+    _, _, vh = torch.linalg.svd(acts[:, cols].double(), full_matrices=False)
+    assert float((delta[:, cols].double() @ vh[:2].T).abs().max()) < 1e-4
+
+
+def test_a_preview_cannot_be_applied_to_another_workspace(demo: tuple, tmp_path: Path) -> None:
+    loaded, repo, _ = demo
+    spec = DirectionSpec(name="bang", positives=["wow!!!", "yes!!!"], negatives=["wow...", "yes..."], constraints=TOY_LIMITS)
+    plan = plan_direction_edit(loaded, repo, spec, "d3")
+    other = WeightGitRepository.init(tmp_path / "other")
+    assert other.head() == repo.head()  # both fresh: the head check alone cannot tell them apart
+    with pytest.raises(ValueError, match="another workspace"):
+        commit_plan(plan, loaded, other, "toy:qwen3_8")
 
 
 def test_direction_strength_zero_is_refused(demo: tuple) -> None:

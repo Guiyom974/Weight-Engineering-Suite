@@ -41,6 +41,8 @@ def test_output_is_captured_and_marker_hidden() -> None:
         ("import sys\nsys._getframe(0)", "sys._getframe"),
         ("import gc\ngc.get_objects()", "gc.get_objects"),
         ("import urllib.request", "urllib"),
+        ("def g():\n    yield 1\nframe = g().gi_frame", "gi_frame"),
+        ("import sys\nsys._current_frames()", "sys._current_frames"),
     ],
 )
 def test_escape_routes_are_blocked(code: str, fragment: str) -> None:
@@ -66,6 +68,29 @@ def test_early_exit_cannot_fake_a_pass() -> None:
     assert not res.passed and "exited before the check finished" in res.reason
     res = run_python_check("import sys\nsys.exit(0)", "assert False")
     assert not res.passed and "SystemExit" in res.reason
+
+
+FORGE_FROM_TRACEBACK = """
+def _forge():
+    try:
+        raise ValueError
+    except ValueError as exc:
+        frame = exc.__traceback__.tb_frame
+    while frame is not None:
+        nonce = frame.f_locals.get("nonce")
+        if nonce:
+            print(nonce + " PASS", flush=True)
+            import os
+            os._exit(0)
+        frame = frame.f_back
+_forge()
+"""
+
+
+def test_frame_introspection_cannot_forge_a_pass() -> None:
+    # Code that walks from a traceback up to the harness frame, reads the completion marker and prints a pass.
+    res = run_python_check(FORGE_FROM_TRACEBACK, "assert False")
+    assert not res.passed and "blocked by the check sandbox" in res.reason and "tb_frame" in res.reason
 
 
 def test_timeout_and_memory_limit() -> None:
@@ -103,6 +128,9 @@ def test_sql_checks_compare_rows_and_deny_attach() -> None:
     assert not attach.passed and "not authorized" in attach.reason.lower()
     pragma = run_sql_check(setup, "pragma table_info(t)", [])
     assert not pragma.passed
+    # The setup script is suite text too: ATTACH there must be denied as well (it would reach the file system).
+    attach_in_setup = run_sql_check("attach database 'x.db' as x;", "select 1", [[1]])
+    assert not attach_in_setup.passed and "not authorized" in attach_in_setup.reason.lower()
 
 
 def test_legacy_pass_at_1_uses_the_hardened_runner() -> None:

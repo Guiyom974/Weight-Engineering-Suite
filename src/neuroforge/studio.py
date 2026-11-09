@@ -231,6 +231,9 @@ class StudioState(ModesMixin, FactoryMixin, SelfImproveMixin, StudioCore):
         cfg, loaded, repo = open_workspace(workspace)
         with self.model_lock:
             self._session = WorkspaceSession(workspace, cfg, loaded, repo)
+            # Previews were measured on the previous workspace's weights; they must not survive the switch.
+            if hasattr(self, "_plans"):
+                self._plans.clear()
             self.settings = resolve_settings(workspace_llm=cfg.llm)
             self.selected_model = self.settings.model or self.selected_model
         self.home.remember(workspace)
@@ -642,13 +645,17 @@ def _make_handler(state: StudioState, allowed_hosts: frozenset[str]) -> type[Bas
                 raise StudioError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, f"body exceeds {state.max_body_bytes} bytes")
             return self.rfile.read(length) if length else b""
 
-        def _parse_json(self, raw: bytes) -> dict[str, Any]:
-            """Token, content type and JSON object checks, in that order."""
+        def _require_token(self) -> None:
+            """403 unless the request carries this session's token."""
             # Constant-time comparison on bytes: compare_digest rejects non-ASCII str with TypeError, and header
             # values arrive decoded as latin-1, so encoding both sides keeps a bad token a 403 instead of a 500.
             sent = self.headers.get(TOKEN_HEADER, "").encode("utf-8")
             if not hmac.compare_digest(sent, state.token.encode("ascii")):
                 raise StudioError(HTTPStatus.FORBIDDEN, "missing or invalid Studio token; reload the page")
+
+        def _parse_json(self, raw: bytes) -> dict[str, Any]:
+            """Token, content type and JSON object checks, in that order."""
+            self._require_token()
             if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
                 raise StudioError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "send application/json")
             try:
@@ -690,6 +697,9 @@ def _make_handler(state: StudioState, allowed_hosts: frozenset[str]) -> type[Bas
                     return None
                 if route.startswith("/api/jobs/"):
                     return HTTPStatus.OK, state.jobs.get(route.rsplit("/", 1)[-1])
+                if query.get("refresh", ["0"])[0] == "1":
+                    # A refresh makes an outbound call to the LLM endpoint: another site must not trigger it.
+                    self._require_token()
                 handler = GET_ROUTES.get(route)
                 if handler is None:
                     raise StudioError(HTTPStatus.NOT_FOUND, "route not found")

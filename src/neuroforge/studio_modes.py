@@ -203,6 +203,8 @@ class ModesMixin(StudioCore):
         plan = getattr(self, "_plans", {}).get(plan_id)
         if plan is None:
             raise StudioError(HTTPStatus.BAD_REQUEST, "unknown or expired preview; preview again")
+        if plan.workspace != str(self.repo.root.resolve()):
+            raise StudioError(HTTPStatus.CONFLICT, "this preview was measured on another workspace; preview again")
         if plan.head != self.repo.head():
             raise StudioError(HTTPStatus.CONFLICT, "the model changed since this preview; preview again before applying")
         if plan.report.get("violations"):

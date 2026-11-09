@@ -55,7 +55,10 @@ def _install_guard(root, readable):
         "os.mkdir", "os.symlink", "os.link", "os.truncate", "os.chmod", "os.chown", "os.utime",
     )
     # Exact events: "sys._getframe" must not catch "sys._getframemodulename", which ordinary stdlib imports raise.
-    blocked_exact = {"sys._getframe"}
+    blocked_exact = {"sys._getframe", "sys._current_frames"}
+    # Frame objects reached through tracebacks, generators or coroutines would let the checked code read the
+    # harness's locals (the completion marker) and forge a pass; CPython audits these attribute reads.
+    frame_attributes = {"tb_frame", "gi_frame", "cr_frame", "ag_frame", "f_back", "f_locals", "f_globals", "f_builtins"}
     blocked_imports = {
         "socket", "_socket", "ssl", "_ssl", "subprocess", "_posixsubprocess", "multiprocessing", "_multiprocessing",
         "ctypes", "_ctypes", "winreg", "_winapi", "msvcrt", "select", "selectors", "asyncio", "mmap",
@@ -89,6 +92,10 @@ def _install_guard(root, readable):
                 raise RuntimeError("blocked by the check sandbox: writing outside the check folder")
             if not writing and not inside(path, readable):
                 raise RuntimeError("blocked by the check sandbox: reading outside the check folder")
+            return
+        if event == "object.__getattr__":
+            if len(args) > 1 and str(args[1]) in frame_attributes:
+                raise RuntimeError("blocked by the check sandbox: frame access (" + str(args[1]) + ")")
             return
         if event in ("os.listdir", "os.scandir"):
             if args and args[0] is not None and not isinstance(args[0], int) and not inside(args[0], readable):
@@ -129,10 +136,11 @@ def main():
             return sqlite3.SQLITE_OK
 
         _install_guard(root, readable)
+        # The authorizer guards the suite's setup script as well as the query: both are untrusted text.
+        conn.set_authorizer(authorizer)
         try:
             if payload.get("setup"):
                 conn.executescript(payload["setup"])
-            conn.set_authorizer(authorizer)
             rows = conn.execute(payload["query"]).fetchmany(1001)
         except BaseException as exc:
             print(nonce + " FAIL " + type(exc).__name__ + ": " + str(exc)[:300])

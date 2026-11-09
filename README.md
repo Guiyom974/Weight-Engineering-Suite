@@ -135,19 +135,38 @@ memory of the device you chose, the licence from the model card, the revision it
 the architecture; for gated models set `HF_TOKEN` (sent only to the Hub, never to its CDN). The CLI equivalent is
 `neuroforge init -w qwen --model Qwen/Qwen2.5-0.5B-Instruct@<commit-sha>`.
 
-You then write an intent, facts or a behaviour's prompt sets (step 2). Fact mode was validated on LiquidAI LFM 3 1.7B
-(9 November 2026): two counterfactual facts ("The capital of France is" -> Rome, "The Eiffel Tower is located in the
-city of" -> London) were written in one batch over layers 4 to 7 within the default limits (860,160 weights, 0.05% of
-the model), every neighbour prompt kept its answer and KL on general prompts was 0.002. After applying the edit the
-model answers "Rome" and "London" while "The capital of Germany is" still gets "Berlin". Rewordings of the edited
-prompts (paraphrases) did not pick up the new answer (0 of 3), so check paraphrases yourself before relying on an edit.
-The opt-in test `tests/test_real_lfm3_edit_modes.py` checks the single-fact case and a behaviour preview. Previews took
-9 to 24 seconds on a GPU and several minutes on a CPU. Validate other architectures the same way before relying on
-them. Remote code is never executed
+You then write an intent, facts or a behaviour's prompt sets (step 2). Validate an architecture the way the case below
+does before relying on it. Remote code is never executed
 (`trust_remote_code=False`); LiquidAI LFM 3 runs through a vendored, reviewed copy of its modeling code. Model
 weights are downloaded from Hugging Face under their own licences and are not part of this repository.
 Memory: a 1.7B model in bfloat16 needs about 4 GB of RAM or VRAM; edits are evaluated on copies of the touched
 tensors only.
+
+## A real case: three outdated capitals in LFM 3 1.7B
+
+Asked 44 factual questions, LiquidAI LFM 3 1.7B gave four clearly wrong answers and one evasive one (greedy answers,
+9 November 2026). Three of the wrong ones are former capitals: "The capital of Nigeria is" -> Lagos (capital until 1991), "The capital of Pakistan is" -> Karachi
+(until 1959), "The capital of Kazakhstan is" -> Almaty (until 1997). One "Update facts" batch with the default
+settings corrected all three:
+
+| Measure | Result |
+| --- | --- |
+| Facts written | 3 of 3: Abuja, Islamabad, Astana |
+| Rewordings the model got wrong before, now right | 4 of 6 ("The capital city of Nigeria is" -> Abuja; the possessive "Nigeria's capital city is" and "Kazakhstan's capital city is" still give the old answer) |
+| Neighbour prompts unchanged | 9 of 9, including each country's largest city: still Lagos, Karachi and Almaty |
+| KL on general prompts | 0.0025 |
+| Weights changed | 860,160 of 1,728,801,536 (0.05%), layers 4 to 7, no limit broken |
+| Undo | bit-exact; every answer back to the original |
+
+After the edit the model continues "The capital of Nigeria is Abuja, located in the Federal Capital Territory" and
+"The capital of Kazakhstan is Astana (formerly known as Nur-Sultan)". Prompts unrelated to the edit keep their answers
+(Paris, Tokyo, Au, Jane Austen), but some longer continuations change after the answer. The recorded preview took 11.6
+seconds on a laptop GPU (RTX 5080). Reproduce it with `python examples/lfm3_capitals.py --model <folder> --device cuda`; the
+recorded output is in [examples/lfm3_capitals_results/results.md](examples/lfm3_capitals_results/results.md).
+
+![The Studio's fact preview on LFM 3 1.7B: three facts written, paraphrases and neighbours measured, before anything is applied](docs/images/lfm3-capitals-preview.png)
+
+The same case in the Studio. The Before and After columns show the model's first answer token, which is why Almaty appears as "Almat".
 
 ## How it works
 

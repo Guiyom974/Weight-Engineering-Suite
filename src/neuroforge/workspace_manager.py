@@ -294,17 +294,25 @@ def _check_endpoint(url: str) -> str:
 
 
 class _ScopedRedirect(urllib.request.HTTPRedirectHandler):
-    """Follow redirects but send the token only to the Hub's own host (a CDN never sees it)."""
+    """Follow redirects over https only, and send the token only to the Hub's own scheme and host.
 
-    def __init__(self, hub_netloc: str, token: str | None):
+    A CDN never sees the token, and a redirect that would downgrade to plain http (except on this machine, for tests)
+    is refused, so neither the token nor a file travels in clear text.
+    """
+
+    def __init__(self, hub_netloc: str, token: str | None, hub_scheme: str = "https"):
         super().__init__()
         self.hub_netloc = hub_netloc
+        self.hub_scheme = hub_scheme
         self.token = token
 
     def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any,
                          newurl: str) -> urllib.request.Request | None:
+        target = urlparse(newurl)
+        if target.scheme != "https" and (target.hostname or "").lower() not in _LOOPBACK:
+            raise urllib.error.HTTPError(newurl, code, "refusing to follow a redirect to plain http", headers, fp)
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
-        if new is not None and self.token and urlparse(newurl).netloc == self.hub_netloc:
+        if new is not None and self.token and target.netloc == self.hub_netloc and target.scheme == self.hub_scheme:
             new.add_unredirected_header("Authorization", f"Bearer {self.token}")
         return new
 
@@ -317,7 +325,8 @@ class HubClient:
         self.timeout = timeout
         self._netloc = urlparse(self.endpoint).netloc
         self._token = os.environ.get(token_env) or None
-        self._opener = urllib.request.build_opener(_ScopedRedirect(self._netloc, self._token))
+        self._opener = urllib.request.build_opener(
+            _ScopedRedirect(self._netloc, self._token, urlparse(self.endpoint).scheme))
 
     @property
     def has_token(self) -> bool:

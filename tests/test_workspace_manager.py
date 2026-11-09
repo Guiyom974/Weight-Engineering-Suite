@@ -7,6 +7,8 @@ All Hub traffic goes to ``tests.fake_hub.FakeHub`` on loopback; nothing here tou
 from __future__ import annotations
 
 import json
+import urllib.error
+import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -18,12 +20,25 @@ from neuroforge.workspace_manager import (
     HubClient,
     StudioHome,
     WorkspaceManagerError,
+    _ScopedRedirect,
     check_model,
     create_workspace,
     download_model,
 )
 
 from .fake_hub import SHA, FakeHub, FakeRepo
+
+
+def test_redirects_keep_the_token_on_the_hub_over_https_only() -> None:
+    handler = _ScopedRedirect("huggingface.co", "hf_test_secret", "https")
+    req = urllib.request.Request("https://huggingface.co/api/models/org/name")
+    same = handler.redirect_request(req, None, 302, "Found", {}, "https://huggingface.co/org/name/resolve/x")
+    assert same is not None and same.unredirected_hdrs.get("Authorization") == "Bearer hf_test_secret"
+    cdn = handler.redirect_request(req, None, 302, "Found", {}, "https://cdn-lfs.huggingface.co/x")
+    assert cdn is not None and "Authorization" not in cdn.unredirected_hdrs
+    # A downgrade to plain http (same host or not) is refused: the token and the file would travel in clear text.
+    with pytest.raises(urllib.error.HTTPError, match="plain http"):
+        handler.redirect_request(req, None, 302, "Found", {}, "http://huggingface.co/org/name/resolve/x")
 
 GB = 1024**3
 PLENTY = {"devices": [{"device": "cpu", "free_bytes": 64 * GB}, {"device": "cuda", "free_bytes": 64 * GB}]}

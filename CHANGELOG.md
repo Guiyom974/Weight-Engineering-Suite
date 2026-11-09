@@ -36,6 +36,20 @@
 - Fixed: an LLM run with its key variable unset sent an unauthenticated request and reported a bare "HTTP 400"; it
   now stops before any request with a message such as `POE_API_KEY is not set` (local servers on 127.0.0.1 still
   work without a key).
+- Fixed (security, found in the independent review): checked code in the factory could read the completion marker
+  through a traceback or generator frame and forge a pass; frame access is now blocked by the check runner's audit
+  hook. The SQL authorizer (no `ATTACH`, `PRAGMA` or extension loading) now also covers the suite's setup script.
+- Fixed (security): `HF_TOKEN` could be sent again after a same-host redirect from https to http; redirects to plain
+  http are now refused, and the token is only re-sent to the Hub's own scheme and host.
+- Fixed: a fact or behaviour preview measured in one workspace could be applied to another after switching; previews
+  now record their workspace and are dropped on a switch.
+- Fixed: a behaviour edit's nullspace correction spread over the whole matrix while the preview, the budget check and
+  the manifest counted only the budgeted columns; the correction now stays inside those columns.
+- Fixed: fact answers lost their leading space in the Studio (the CSV import stripped it, and the form goes through the
+  CSV), so on real models the edit targeted the wrong token (`Abuja` instead of ` Abuja`). The import now keeps the
+  space, and a preview adds it, with a note, when the model itself writes one after the prompt.
+- Refreshing the model list (`GET /api/llm/models?refresh=1`) requires the session token, so another site cannot
+  trigger the outbound call. The isolated surgery subprocess now fails closed when its POSIX memory limit cannot be set.
 - `neuroforge log` labels its column "goals met" (it was "gate"): every committed edit passed the limits, and the
   column says whether all target goals were also reached.
 

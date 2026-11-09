@@ -46,12 +46,10 @@ from safetensors.torch import load_file, save_file
 from libweightspace.sandbox import execute_weight_surgery_script, SandboxSecurityViolation, SandboxExecutionError
 
 def _apply_posix_rlimit(max_mb: int) -> None:
-    try:
-        import resource
-        limit_bytes = int(max_mb) * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
-    except Exception:
-        pass
+    # Fail closed: if the limit cannot be set, the child stops here instead of running unlimited.
+    import resource
+    limit_bytes = int(max_mb) * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
 
 def main() -> int:
     work_dir = Path(sys.argv[1])

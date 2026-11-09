@@ -723,10 +723,10 @@
   function lines(text) { return text.split("\n").map((s) => s.trim()).filter((s) => s.length > 0); }
 
   async function api(method, path, body) {
-    const opts = { method, headers: {} };
+    // The token goes on every request: GETs with side effects (refreshing the model list) require it too.
+    const opts = { method, headers: { "X-Studio-Token": token } };
     if (body !== undefined) {
       opts.headers["Content-Type"] = "application/json";
-      opts.headers["X-Studio-Token"] = token;
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(path, opts);

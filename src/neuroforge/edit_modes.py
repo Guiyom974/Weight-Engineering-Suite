@@ -44,9 +44,7 @@ from libweightspace.candidates import extract_json
 from libweightspace.cow_overlay import CoWWeightOverlay
 from libweightspace.llm_backends import LLMBackend
 from libweightspace.loading import LoadedModel
-from libweightspace.nullspace import NullspaceLocker
 from libweightspace.prober import capture_linear_inputs, model_device, model_logits
-from libweightspace.spectral import spectral_norm_shift
 
 from .cancellation import OperationCancelled
 from .convergence_engine import check_constraints
@@ -180,9 +178,12 @@ def parse_facts_csv(text: str) -> list[Fact]:
         if len(facts) >= MAX_FACTS:
             raise ValueError(f"at most {MAX_FACTS} facts per batch")
         clean = {k.strip(): (v or "").strip() for k, v in row.items() if k}
+        # Answers keep their leading space: real tokenizers start the answer word with it (" Abuja", not "Abuja").
+        answers = {k.strip(): (v or "").rstrip() for k, v in row.items() if k and k.strip() in ("new_object", "old_object")}
         try:
             facts.append(Fact(
-                prompt=clean["prompt"], new_object=clean["new_object"], old_object=clean.get("old_object") or None,
+                prompt=clean["prompt"], new_object=answers.get("new_object", ""),
+                old_object=answers.get("old_object") or None,
                 subject=clean.get("subject") or None,
                 paraphrases=[p for p in clean.get("paraphrases", "").split("|") if p.strip()],
                 neighbours=[p for p in clean.get("neighbours", "").split("|") if p.strip()],
@@ -208,6 +209,14 @@ class EditPlan:
     structural: dict[str, torch.Tensor] = field(repr=False)
     report: dict[str, Any]
     manifest_fields: dict[str, Any]
+    # The edit history the preview was measured against: two fresh workspaces share the head "ROOT", so the head
+    # alone cannot stop a preview from one workspace being committed to another.
+    workspace: str
+
+
+def _workspace_id(repo: WeightGitRepository) -> str:
+    """Identity of the workspace an edit history belongs to (its resolved history folder)."""
+    return str(repo.root.resolve())
 
 
 def _down_proj(loaded: LoadedModel, layer: int) -> tuple[str, nn.Linear]:
@@ -289,8 +298,11 @@ def commit_plan(plan: EditPlan, loaded: LoadedModel, repo: WeightGitRepository, 
     """Apply a previewed plan to the model and commit it as one patch; returns the patch id.
 
     Raises:
-        ValueError: the model moved since the preview, or the plan broke a constraint.
+        ValueError: the preview belongs to another workspace, the model moved since the preview, or the plan broke a
+            constraint.
     """
+    if plan.workspace != _workspace_id(repo):
+        raise ValueError("this preview was measured on another workspace; preview again in this one")
     if repo.head() != plan.head:
         raise ValueError("the model changed since this preview; preview again before applying")
     if plan.report.get("violations"):
@@ -448,6 +460,34 @@ def _optimise_value(
     return delta.detach(), first, last, factor
 
 
+def _match_answer_spacing(model: nn.Module, tokenizer: Any, facts: Sequence[Fact]) -> tuple[list[Fact], list[str]]:
+    """Give each new answer the leading space the model itself writes after its prompt, when the answer lacks one.
+
+    Real tokenizers write the answer word together with its leading space (" Abuja"); an answer typed without it
+    would target a different token. The model's own first answer token decides, so a model that answers without a
+    space (the built-in toy, for most prompts) is left alone.
+
+    Returns:
+        The facts to edit and one note per answer that was changed.
+    """
+    out: list[Fact] = []
+    notes: list[str] = []
+    for i, fact in enumerate(facts, start=1):
+        if fact.new_object[:1].isspace() or fact.prompt[-1:].isspace():
+            out.append(fact)
+            continue
+        first = _decode(tokenizer, _answer(model, tokenizer, fact.prompt, 1))
+        if not first[:1] == " ":
+            out.append(fact)
+            continue
+        update = {"new_object": " " + fact.new_object}
+        if fact.old_object and not fact.old_object[:1].isspace():
+            update["old_object"] = " " + fact.old_object
+        out.append(fact.model_copy(update=update))
+        notes.append(f"fact {i}: added a leading space to the new answer, as the model writes one after this prompt")
+    return out, notes
+
+
 def _fact_answers(model: nn.Module, tokenizer: Any, fact: Fact, target_ids: list[int]) -> dict[str, Any]:
     ids = _answer(model, tokenizer, fact.prompt, len(target_ids))
     device = model_device(model)
@@ -470,6 +510,27 @@ def exact_nullspace(rows: torch.Tensor) -> tuple[torch.Tensor, int]:
     keep = evals <= EXACT_PROTECTION * max(top, 1e-30)
     basis = evecs[:, keep]
     return (basis @ basis.T).float(), int(keep.sum())
+
+
+def _column_protector(acts: torch.Tensor, cols: torch.Tensor, top_k: int) -> torch.Tensor:
+    """Projector, inside ``cols``, away from the ``top_k`` main directions the protected inputs use there.
+
+    The same rule as ``NullspaceLocker.register_protected_directions`` (top right singular vectors of the uncentred
+    inputs), restricted to the budgeted columns so the projected edit cannot spill into other columns.
+
+    Args:
+        acts: protected inputs ``[N_tokens, d_in]``.
+        cols: the budgeted input columns.
+        top_k: how many main directions to protect.
+
+    Returns:
+        A ``[len(cols), len(cols)]`` projector to multiply the edit's column block by, on the right.
+    """
+    x = acts.detach()[:, cols.cpu()].double().cpu()
+    _, s, vh = torch.linalg.svd(x, full_matrices=False)
+    keep = int((s > EXACT_PROTECTION * (float(s[0]) if s.numel() else 1.0)).sum())
+    v = vh[: min(top_k, keep)].T
+    return (torch.eye(x.shape[1], dtype=torch.float64) - v @ v.T).float()
 
 
 def _protector(
@@ -512,6 +573,8 @@ def plan_fact_edit(
         ValueError: no editable layer, a budget too small for one column per layer, an empty target, or a cancel.
     """
     model, tok = loaded.model, loaded.tokenizer
+    matched, spacing_notes = _match_answer_spacing(model, tok, batch.facts)
+    batch = batch.model_copy(update={"facts": matched})
     layers = batch.layers or default_fact_layers(loaded)
     sites = [(layer, *_down_proj(loaded, layer)) for layer in sorted(set(layers))]
     params = dict(model.named_parameters())
@@ -544,7 +607,7 @@ def plan_fact_edit(
     protected = list(batch.general_prompts) + [n for f in batch.facts for n in f.neighbours]
     deltas: dict[str, torch.Tensor] = {}
     columns: dict[str, list[int]] = {}
-    notes: list[str] = []
+    notes: list[str] = list(spacing_notes)
     violations: list[str] = []
     planned = []
     for layer, name, _module in sites:
@@ -622,7 +685,7 @@ def plan_fact_edit(
         "plan_id": plan_id, "mode": "facts", "batch_id": batch.batch_id, "layers": [s[0] for s in sites],
         "tensors": list(columns), "columns": columns, "weights_targeted": weights_targeted, "weights_budget": budget,
         "violations": violations, "notes": notes, "shares": shares,
-        "nullspace_prompts": len(protected) if p_null is not None else 0,
+        "nullspace_prompts": len(protected) if batch.constraints.enforce_nullspace_projection and protected else 0,
         "facts": rows, "summary": summary, "drift": [_drift(repo, params, n, d) for n, d in deltas.items()],
         "head": repo.head(),
     }
@@ -642,7 +705,7 @@ def plan_fact_edit(
         "target_before": target_before, "target_after": target_after,
         "invariant_before": {"general.kl_divergence": 0.0}, "invariant_after": invariant_after,
     }
-    return EditPlan(plan_id, "facts", repo.head(), deltas, dict(deltas), report, fields)
+    return EditPlan(plan_id, "facts", repo.head(), deltas, dict(deltas), report, fields, _workspace_id(repo))
 
 
 @torch.no_grad()
@@ -748,19 +811,16 @@ def plan_direction_edit(
     unit = unit / (unit.norm() + 1e-12)
     alignment = (unit @ weight).abs()  # [d_in]: how much each column writes along the direction
     cols = torch.topk(alignment, k=columns).indices.sort().values
-    raw = torch.zeros_like(weight)
-    raw[:, cols] = -spec.strength * torch.outer(unit, unit @ weight[:, cols])
-    delta = raw
+    raw_s = -spec.strength * torch.outer(unit, unit @ weight[:, cols])
     if spec.constraints.enforce_nullspace_projection and spec.general_prompts:
-        locker = NullspaceLocker()
+        # Protect the general prompts' main input directions inside the budgeted columns only: the committed change
+        # then stays in those columns, and the budget check and the manifest count exactly what changes.
         acts = capture_linear_inputs(model, tok, spec.general_prompts, [name])[name]
-        locker.register_protected_directions(name, acts, top_k=2)
-        delta = locker.project_into_nullspace(name, raw)
+        raw_s = raw_s @ _column_protector(acts, cols, top_k=2).to(raw_s.device)
+    delta = torch.zeros_like(weight)
+    delta[:, cols] = raw_s
     deltas = {name: delta.to(params[name].dtype)}
-    violations = check_constraints({name: raw}, params, total, spec.constraints)
-    shift_after = spectral_norm_shift(params[name], deltas[name])  # the projection can change what was approved
-    if shift_after > spec.constraints.max_spectral_norm_shift:
-        violations.append(f"{name}: spectral shift {shift_after:.4f} after projection")
+    violations = check_constraints(deltas, params, total, spec.constraints)
     if progress is not None:
         progress("measuring KL and the shift along the direction", 0.6)
     overlay = CoWWeightOverlay(model)
@@ -798,7 +858,7 @@ def plan_direction_edit(
         "invariant_before": {"general.kl_divergence": 0.0},
         "invariant_after": {"general.kl_divergence": float(kl_general)},
     }
-    return EditPlan(plan_id, "direction", repo.head(), deltas, {name: raw}, report, fields)
+    return EditPlan(plan_id, "direction", repo.head(), deltas, dict(deltas), report, fields, _workspace_id(repo))
 
 
 # --- frontier-model helpers (drafts only; the user reviews them) ---------------------------------------------

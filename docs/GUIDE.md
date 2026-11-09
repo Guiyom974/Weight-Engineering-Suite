@@ -163,9 +163,13 @@ budget, and each tensor's distance from the original model before and after (cum
 model changed since the preview. Undo it in step 5 like any patch.
 
 On the built-in toy models, fact edits large enough to change an answer exceed the limits: the preview says why and
-refuses to apply. Fact mode was validated on LiquidAI LFM 3 1.7B: the facts were written and their neighbours kept
-their answers, but rewordings of the edited prompts did not pick up the new answer (README, "Real models"). Read the
-paraphrase column of the preview, and validate other architectures before relying on fact mode.
+refuses to apply. Fact mode was validated on LiquidAI LFM 3 1.7B (README, "A real case"): three outdated capitals were
+corrected and every neighbour kept its answer, but only 4 of 6 rewordings followed (the possessive "Nigeria's capital
+city is" did not). Read the paraphrase column of the preview, and validate other architectures before relying on fact
+mode.
+
+Answers start with a space on real models (" Abuja", not "Abuja"): keep it in the CSV (`prompt, Abuja`). If you leave
+it out and the model writes one after the prompt, the preview adds it and says so in its notes.
 
 ## Step 2, other modes: adjust a behaviour
 

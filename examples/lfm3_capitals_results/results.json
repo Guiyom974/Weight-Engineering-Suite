@@ -1,0 +1,301 @@
+{
+ "model": "LiquidAI/LFM3-1.7B",
+ "device": "cuda",
+ "parameters": 1728801536,
+ "measured_at": "2026-11-09 22:00",
+ "patch_id": "d8eee536cd057d43",
+ "preview_seconds": 11.6,
+ "preview": {
+  "layers": [
+   4,
+   5,
+   6,
+   7
+  ],
+  "tensors": [
+   "model.layers.4.feed_forward.w2.weight",
+   "model.layers.5.feed_forward.w2.weight",
+   "model.layers.6.feed_forward.w2.weight",
+   "model.layers.7.feed_forward.w2.weight"
+  ],
+  "weights_targeted": 860160,
+  "weights_budget": 864400,
+  "violations": [],
+  "notes": [],
+  "summary": {
+   "efficacy_before": 0.0,
+   "efficacy_after": 1.0,
+   "paraphrase_after": 0.6667,
+   "neighbourhood_unchanged": 1.0,
+   "kl_general": 0.002522
+  },
+  "facts": [
+   {
+    "prompt": "The capital of Nigeria is",
+    "new_object": " Abuja",
+    "old_object": " Lagos",
+    "before": {
+     "success": false,
+     "target_prob": 0.04506,
+     "answer": " Lagos"
+    },
+    "after": {
+     "success": true,
+     "target_prob": 0.877228,
+     "answer": " Abuja"
+    },
+    "value_loss": {
+     "before": 1.5506,
+     "after": 0.0389,
+     "clamp_factor": 4.0
+    },
+    "paraphrases": {
+     "count": 2,
+     "before": 0.0,
+     "after": 0.5
+    },
+    "neighbourhood": {
+     "count": 3,
+     "unchanged": 1.0
+    }
+   },
+   {
+    "prompt": "The capital of Pakistan is",
+    "new_object": " Islamabad",
+    "old_object": " Karachi",
+    "before": {
+     "success": false,
+     "target_prob": 0.04172,
+     "answer": " Karachi"
+    },
+    "after": {
+     "success": true,
+     "target_prob": 0.931066,
+     "answer": " Islamabad"
+    },
+    "value_loss": {
+     "before": 1.6021,
+     "after": 0.0338,
+     "clamp_factor": 4.0
+    },
+    "paraphrases": {
+     "count": 2,
+     "before": 0.0,
+     "after": 1.0
+    },
+    "neighbourhood": {
+     "count": 3,
+     "unchanged": 1.0
+    }
+   },
+   {
+    "prompt": "The capital of Kazakhstan is",
+    "new_object": " Astana",
+    "old_object": " Almaty",
+    "before": {
+     "success": false,
+     "target_prob": 0.131366,
+     "answer": " Almat"
+    },
+    "after": {
+     "success": true,
+     "target_prob": 0.692793,
+     "answer": " Astana"
+    },
+    "value_loss": {
+     "before": 1.0363,
+     "after": 0.2075,
+     "clamp_factor": 4.0
+    },
+    "paraphrases": {
+     "count": 2,
+     "before": 0.0,
+     "after": 0.5
+    },
+    "neighbourhood": {
+     "count": 3,
+     "unchanged": 1.0
+    }
+   }
+  ],
+  "drift": [
+   {
+    "tensor": "model.layers.4.feed_forward.w2.weight",
+    "before": 0.0,
+    "after": 0.06904
+   },
+   {
+    "tensor": "model.layers.5.feed_forward.w2.weight",
+    "before": 0.0,
+    "after": 0.06788
+   },
+   {
+    "tensor": "model.layers.6.feed_forward.w2.weight",
+    "before": 0.0,
+    "after": 0.073303
+   },
+   {
+    "tensor": "model.layers.7.feed_forward.w2.weight",
+    "before": 0.0,
+    "after": 0.072365
+   }
+  ]
+ },
+ "restore_bit_exact": true,
+ "answers": [
+  {
+   "role": "fact",
+   "prompt": "The capital of Nigeria is",
+   "before": " Lagos. The population of Lagos is about 15",
+   "after": " Abuja, located in the Federal Capital Territory. However,",
+   "restored": " Lagos. The population of Lagos is about 15"
+  },
+  {
+   "role": "rewording",
+   "prompt": "Nigeria's capital city is",
+   "before": " Lagos. The country has a population of over 200",
+   "after": " Lagos. The population of Nigeria is approximately 200 million",
+   "restored": " Lagos. The country has a population of over 200"
+  },
+  {
+   "role": "rewording",
+   "prompt": "The capital city of Nigeria is",
+   "before": " Lagos. The population of Lagos is over 15",
+   "after": " Abuja, which became the official seat of government in ",
+   "restored": " Lagos. The population of Lagos is over 15"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The largest city in Nigeria is",
+   "before": " Lagos, which has a population of over 15 million",
+   "after": " Lagos, which has a population of over 15 million",
+   "restored": " Lagos, which has a population of over 15 million"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The official language of Nigeria is",
+   "before": " English, but there are many local languages spoken across the country",
+   "after": " English, but there are many local languages spoken by the people",
+   "restored": " English, but there are many local languages spoken across the country"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The capital of Ghana is",
+   "before": " Accra. The population of Ghana is approximately 31 million",
+   "after": " Accra. The population of Ghana is approximately 31 million",
+   "restored": " Accra. The population of Ghana is approximately 31 million"
+  },
+  {
+   "role": "fact",
+   "prompt": "The capital of Pakistan is",
+   "before": " Karachi. The capital of Bangladesh is Dhaka. The",
+   "after": " Islamabad, located in the northern part of the country.",
+   "restored": " Karachi. The capital of Bangladesh is Dhaka. The"
+  },
+  {
+   "role": "rewording",
+   "prompt": "The capital city of Pakistan is",
+   "before": " Karachi. The capital city of Bangladesh is Dhaka.",
+   "after": " Islamabad, located in the northwestern part of the country.",
+   "restored": " Karachi. The capital city of Bangladesh is Dhaka."
+  },
+  {
+   "role": "rewording",
+   "prompt": "The capital of Pakistan is the city of",
+   "before": " Karachi. The capital of Pakistan is Karachi, a",
+   "after": " Islamabad, located in the northern part of the country.",
+   "restored": " Karachi. The capital of Pakistan is Karachi, a"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The largest city in Pakistan is",
+   "before": " Karachi, which has a population of over 20 million",
+   "after": " Karachi, which has a population of over 20 million",
+   "restored": " Karachi, which has a population of over 20 million"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The official language of Pakistan is",
+   "before": " Urdu, but it has many other languages spoken in the",
+   "after": " Urdu, but it has many dialects. The official language",
+   "restored": " Urdu, but it has many other languages spoken in the"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The capital of Bangladesh is",
+   "before": " Dhaka. The population of Dhaka is over 15",
+   "after": " Dhaka. The population of Dhaka is approximately 15",
+   "restored": " Dhaka. The population of Dhaka is over 15"
+  },
+  {
+   "role": "fact",
+   "prompt": "The capital of Kazakhstan is",
+   "before": " Almaty. The largest city in Kazakhstan is Astana",
+   "after": " Astana (formerly known as Nur-Sultan). It was",
+   "restored": " Almaty. The largest city in Kazakhstan is Astana"
+  },
+  {
+   "role": "rewording",
+   "prompt": "Kazakhstan's capital city is",
+   "before": " Almaty. The largest city in Kazakhstan is also Al",
+   "after": " Almaty. The largest city in Kazakhstan is Astana",
+   "restored": " Almaty. The largest city in Kazakhstan is also Al"
+  },
+  {
+   "role": "rewording",
+   "prompt": "The capital city of Kazakhstan is",
+   "before": " Nur-Sultan (formerly Astana). It was established in",
+   "after": " Astana (formerly known as Almaty). It is",
+   "restored": " Nur-Sultan (formerly Astana). It was established in"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The largest city in Kazakhstan is",
+   "before": " Almaty, which has a population of over 1",
+   "after": " Almaty, which has a population of over 1",
+   "restored": " Almaty, which has a population of over 1"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The official language of Kazakhstan is",
+   "before": " Kazakh. The official languages are Kazakh and Russian.\n\nKaz",
+   "after": " Kazakh. The official language of Russia is Russian. The official",
+   "restored": " Kazakh. The official languages are Kazakh and Russian.\n\nKaz"
+  },
+  {
+   "role": "neighbour",
+   "prompt": "The capital of Uzbekistan is",
+   "before": " Tashkent. The capital of Kazakhstan is Nur-S",
+   "after": " Tashkent. The capital of Kazakhstan is Astana",
+   "restored": " Tashkent. The capital of Kazakhstan is Nur-S"
+  },
+  {
+   "role": "unrelated",
+   "prompt": "The capital of France is",
+   "before": " Paris.\n\nWhat is the capital of Japan?\n\nThe capital of",
+   "after": " Paris, and the population of France is about 67 million",
+   "restored": " Paris.\n\nWhat is the capital of Japan?\n\nThe capital of"
+  },
+  {
+   "role": "unrelated",
+   "prompt": "The capital of Japan is",
+   "before": " Tokyo. The capital of the United States is Washington, D",
+   "after": " Tokyo, but the user might be interested in a different context",
+   "restored": " Tokyo. The capital of the United States is Washington, D"
+  },
+  {
+   "role": "unrelated",
+   "prompt": "The chemical symbol for gold is",
+   "before": " Au. The chemical symbol for water is H2O.",
+   "after": " Au. The chemical symbol for water is H2O.",
+   "restored": " Au. The chemical symbol for water is H2O."
+  },
+  {
+   "role": "unrelated",
+   "prompt": "The novel Pride and Prejudice was written by",
+   "before": " Jane Austen, an English novelist. It is one of",
+   "after": " Jane Austen, an English novelist. It is one of",
+   "restored": " Jane Austen, an English novelist. It is one of"
+  }
+ ]
+}

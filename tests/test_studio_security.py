@@ -67,6 +67,14 @@ def call(
     return out
 
 
+def test_model_list_refresh_needs_the_token(studio: tuple[StudioServer, Path]) -> None:
+    srv, _ = studio
+    srv.state.refresh_models = lambda background=False: None  # type: ignore[method-assign]  # no network in tests
+    assert call(srv, "GET", "/api/llm/models?refresh=1")[0] == 403  # e.g. an <img> on another site
+    assert call(srv, "GET", "/api/llm/models?refresh=1", headers={"X-Studio-Token": srv.state.token})[0] == 200
+    assert call(srv, "GET", "/api/llm/models")[0] == 200  # reading the cached list stays open to the page
+
+
 def test_index_has_token_nonce_csp_and_no_cors(studio: tuple[StudioServer, Path]) -> None:
     srv, _ = studio
     status, headers, body = call(srv, "GET", "/")
