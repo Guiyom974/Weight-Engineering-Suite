@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weight-engineering-suite"
+version = "0.2.0"
+description = "Diagnose and repair language-model behaviour with small, measured, reversible weight edits: CLI plus a guided local Studio, with any OpenAI-compatible LLM (Poe recommended)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+keywords = ["model editing", "weight editing", "interpretability", "llm", "pytorch", "safetensors"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.3.0",
+    "safetensors>=0.4.3",
+    "pydantic>=2.7.0",
+    "pyyaml>=6.0.1",
+    "typer>=0.12.3",
+    "rich>=13.7.1",
+    "numpy>=1.26.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/Guiyom974/Weight-Engineering-Suite"
+Documentation = "https://github.com/Guiyom974/Weight-Engineering-Suite/blob/main/docs/GUIDE.md"
+Issues = "https://github.com/Guiyom974/Weight-Engineering-Suite/issues"
+Changelog = "https://github.com/Guiyom974/Weight-Engineering-Suite/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+# Real Hugging Face checkpoints (Qwen, Gemma, DeepSeek, LFM 3). The vendored LFM 3 code needs transformers 5.
+hf = [
+    "transformers>=5.0",
+    "accelerate>=0.33.0",
+]
+dev = [
+    "pytest>=8.2.0",
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+    "bandit>=1.7.9",
+]
+
+[project.scripts]
+neuroforge = "neuroforge.cli:app"
+wrsi = "wrsi.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+neuroforge = ["ui/*.html", "package_templates/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --tb=short"
+markers = [
+    "real_model: needs a local real checkpoint; runs only when WEIGHTLAB_REAL_MODEL_DIR is set",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "B008",   # Typer declares CLI options as call defaults by design.
+    "E501",   # prose in prompts and help texts; code is kept readable by hand.
+    "UP042",  # schemas use `class X(str, Enum)` for readable YAML values.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/libweightspace/vendor_lfm3/*" = ["E", "F", "W", "I", "B", "UP"]  # vendored upstream code, kept verbatim
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = [
+    "vendor_lfm3",
+]
+
+[[tool.mypy.overrides]]
+module = "libweightspace.vendor_lfm3.*"
+ignore_errors = true  # vendored upstream modeling code, kept verbatim (see THIRD_PARTY_NOTICES.md)
+
+[tool.bandit]
+exclude_dirs = ["tests", "src/libweightspace/vendor_lfm3"]

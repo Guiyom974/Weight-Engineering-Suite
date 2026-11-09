@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets and local configuration
+.env
+.env.*
+
+# Workspaces, models and exports created while using the tool
+demo/
+workspace/
+*.safetensors
+*.gguf
+*.bin
+exports/
+.wgit/
+.wrsi/
+.factory/
+.studio/
+packages/
+models/
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

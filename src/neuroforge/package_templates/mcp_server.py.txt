@@ -1,0 +1,103 @@
+"""MCP server (stdio) that answers with the edited local model packaged by the Weight Engineering Model Factory.
+
+This file is a fixed template: everything specific to the package (tool name, description, model, settings) is read
+from tool_config.json next to it, and the weight edit from patch.sparse.safetensors. Requires the
+weight-engineering-suite package (and its 'hf' extra for Hugging Face models) in the Python that runs it.
+
+Run: python server.py   (an MCP client starts it and talks JSON-RPC 2.0 over stdin/stdout, one message per line)
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+HERE = Path(__file__).resolve().parent
+CONFIG = json.loads((HERE / "tool_config.json").read_text(encoding="utf-8"))
+PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+_MODEL: dict[str, Any] = {}
+
+
+def _load() -> dict[str, Any]:
+    """Base model plus the packaged edit, loaded once on the first call."""
+    if not _MODEL:
+        from libweightspace.loading import load_model
+        from neuroforge.exporter import load_sparse_delta
+        from neuroforge.weight_git import apply_deltas_inplace
+
+        loaded = load_model(CONFIG["load_spec"], CONFIG.get("device", "cpu"), bool(CONFIG.get("demo_defect", False)))
+        apply_deltas_inplace(loaded.model, load_sparse_delta(HERE / "patch.sparse.safetensors"))
+        _MODEL["loaded"] = loaded
+    return _MODEL["loaded"]
+
+
+def _answer(prompt: str) -> str:
+    from neuroforge.factory import generate_completion
+
+    loaded = _load()
+    return generate_completion(loaded.model, loaded.tokenizer, str(CONFIG.get("prefix", "")) + prompt,
+                               int(CONFIG.get("max_new_tokens", 64)), list(CONFIG.get("stop", [])))
+
+
+def _tool() -> dict[str, Any]:
+    return {
+        "name": CONFIG["tool_name"],
+        "description": CONFIG["description"],
+        "inputSchema": {"type": "object", "properties": {"prompt": {"type": "string", "maxLength": 8000}},
+                        "required": ["prompt"]},
+    }
+
+
+def handle(message: dict[str, Any]) -> dict[str, Any] | None:
+    """One JSON-RPC request -> response (None for notifications)."""
+    method = message.get("method")
+    if "id" not in message:
+        return None
+    reply: dict[str, Any] = {"jsonrpc": "2.0", "id": message["id"]}
+    params = message.get("params") or {}
+    if method == "initialize":
+        asked = params.get("protocolVersion")
+        reply["result"] = {
+            "protocolVersion": asked if asked in PROTOCOL_VERSIONS else PROTOCOL_VERSIONS[0],
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": CONFIG["tool_name"], "version": "1.0.0"},
+        }
+    elif method == "ping":
+        reply["result"] = {}
+    elif method == "tools/list":
+        reply["result"] = {"tools": [_tool()]}
+    elif method == "tools/call":
+        args = params.get("arguments") or {}
+        prompt = args.get("prompt")
+        if params.get("name") != CONFIG["tool_name"] or not isinstance(prompt, str) or len(prompt) > 8000:
+            reply["result"] = {"content": [{"type": "text", "text": "invalid tool name or prompt"}], "isError": True}
+        else:
+            reply["result"] = {"content": [{"type": "text", "text": _answer(prompt)}], "isError": False}
+    else:
+        reply["error"] = {"code": -32601, "message": "method not found"}
+    return reply
+
+
+def main() -> None:
+    """Read one JSON message per line from stdin and write replies to stdout."""
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            message = json.loads(line)
+        except ValueError:
+            sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": None,
+                                         "error": {"code": -32700, "message": "parse error"}}) + "\n")
+            sys.stdout.flush()
+            continue
+        reply = handle(message) if isinstance(message, dict) else None
+        if reply is not None:
+            sys.stdout.write(json.dumps(reply) + "\n")
+            sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

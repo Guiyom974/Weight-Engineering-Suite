@@ -1,0 +1,5 @@
+# Text files are stored with LF; shell scripts keep LF in every checkout so they run in Git Bash and on Linux.
+* text=auto
+*.sh text eol=lf
+*.png binary
+*.safetensors binary

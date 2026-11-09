@@ -1,0 +1,1675 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="studio-token" content="__STUDIO_TOKEN__">
+<title>Weight Engineering Studio</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --font-ui: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+    --font-data: "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+    --radius: 8px; --radius-small: 4px;
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef1f4; --text: #17202a; --text-muted: #4d5966;
+    --border: #cfd6dd; --accent: #0b6e69; --accent-text: #ffffff; --accent-soft: #d8efed;
+    --ok: #1d6b34; --ok-soft: #dcefe1; --warn: #7a4b00; --warn-soft: #f8ead0; --bad: #a3231b; --bad-soft: #f8dcd9;
+    --focus: #1b5fd1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where([data-theme="auto"]) {
+      --bg: #111518; --surface: #1a2025; --surface-2: #232a31; --text: #e8edf1; --text-muted: #a9b4be;
+      --border: #36414b; --accent: #4fc2b9; --accent-text: #08201e; --accent-soft: #163a37;
+      --ok: #7fd394; --ok-soft: #173322; --warn: #f0c46c; --warn-soft: #3a2d12; --bad: #f2948c; --bad-soft: #3d1a17;
+      --focus: #7fb0ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111518; --surface: #1a2025; --surface-2: #232a31; --text: #e8edf1; --text-muted: #a9b4be;
+    --border: #36414b; --accent: #4fc2b9; --accent-text: #08201e; --accent-soft: #163a37;
+    --ok: #7fd394; --ok-soft: #173322; --warn: #f0c46c; --warn-soft: #3a2d12; --bad: #f2948c; --bad-soft: #3d1a17;
+    --focus: #7fb0ff;
+  }
+  * { box-sizing: border-box; }
+  html { font-family: var(--font-ui); font-size: 16px; line-height: 1.5; color: var(--text); background: var(--bg); }
+  body { margin: 0; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: var(--space-4); top: var(--space-4); background: var(--surface); padding: var(--space-2) var(--space-3); z-index: 10; }
+  header.top { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 var(--space-4); }
+  .top-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-4); padding-bottom: var(--space-3); }
+  .brand h1 { font-size: 1.25rem; margin: 0; }
+  .brand p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .chip { font-family: var(--font-data); font-size: 0.8rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px var(--space-3); overflow-wrap: anywhere; }
+  nav.views { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-bottom: var(--space-3); }
+  nav.views button[aria-current="page"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button { min-height: 44px; padding: 0 var(--space-4); border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  button.danger { border-color: var(--bad); color: var(--bad); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  button.small { min-height: 36px; padding: 0 var(--space-3); font-size: 0.9rem; }
+  select, input[type="number"], input[type="text"] { min-height: 44px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); max-width: 100%; }
+  input[type="range"] { width: 100%; min-height: 32px; accent-color: var(--accent); }
+  textarea { width: 100%; min-height: 140px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-family: var(--font-data); font-size: 0.85rem; }
+  textarea.short { min-height: 96px; }
+  label { font-weight: 600; display: block; margin-bottom: var(--space-1); }
+  .hint { color: var(--text-muted); font-size: 0.9rem; margin: var(--space-1) 0 0; }
+  nav.steps ol { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); padding: 0; margin: var(--space-5) 0; }
+  nav.steps a { display: block; text-decoration: none; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); min-height: 44px; }
+  nav.steps a .n { font-family: var(--font-data); font-size: 0.8rem; color: var(--text-muted); display: block; }
+  nav.steps a .t { font-weight: 600; font-size: 0.95rem; }
+  nav.steps a[data-state="done"] { border-color: var(--ok); }
+  nav.steps a[data-state="done"] .n::after { content: " - done"; color: var(--ok); }
+  main { padding-bottom: var(--space-7); }
+  section.step, section.panel { scroll-margin-top: 96px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-5); margin-bottom: var(--space-5); }
+  section.step h2, section.panel h2 { margin: 0 0 var(--space-1); font-size: 1.2rem; }
+  section.step h2 .n { font-family: var(--font-data); color: var(--accent); margin-right: var(--space-2); }
+  h3 { font-size: 1.05rem; margin: var(--space-5) 0 var(--space-2); }
+  .view > h2.view-title { font-size: 1.35rem; margin: var(--space-5) 0 var(--space-1); }
+  .view > p.view-lead { margin: 0 0 var(--space-4); color: var(--text-muted); max-width: 72ch; }
+  .lead { margin: 0 0 var(--space-4); color: var(--text-muted); max-width: 72ch; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; margin: var(--space-3) 0; }
+  .field { display: flex; flex-direction: column; min-width: 180px; }
+  .field.narrow { min-width: 120px; max-width: 160px; }
+  .grow { flex: 1 1 260px; }
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .status { border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0; font-size: 0.95rem; }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.warn { background: var(--warn-soft); color: var(--warn); }
+  .status.bad { background: var(--bad-soft); color: var(--bad); }
+  .status.info { background: var(--surface-2); color: var(--text); }
+  ul.issues { margin: var(--space-2) 0; padding-left: var(--space-5); color: var(--bad); }
+  ul.notes { margin: var(--space-2) 0; padding-left: var(--space-5); color: var(--text-muted); }
+  .empty { color: var(--text-muted); font-style: italic; margin: var(--space-3) 0; }
+  .table-wrap { overflow-x: auto; margin-top: var(--space-3); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 600; }
+  td.num, th.num { text-align: right; font-family: var(--font-data); }
+  td.mono { font-family: var(--font-data); word-break: break-all; }
+  .mono { font-family: var(--font-data); overflow-wrap: anywhere; }  /* paths have no spaces to break at */
+  .bar { height: 8px; background: var(--accent); border-radius: 4px; min-width: 2px; }
+  .badge { display: inline-block; font-size: 0.8rem; border-radius: var(--radius-small); padding: 0 var(--space-2); }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .badge.info { background: var(--surface-2); color: var(--text-muted); }
+  details { margin-top: var(--space-3); }
+  summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+  fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); margin: var(--space-3) 0 0; }
+  legend { font-weight: 600; padding: 0 var(--space-1); }
+  .radio { display: flex; gap: var(--space-2); align-items: flex-start; margin: var(--space-2) 0; font-weight: 400; }
+  .radio input { margin-top: 2px; width: 24px; height: 24px; flex: none; }
+  .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .modes label.radio { border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); margin: 0; background: var(--surface); }
+  .modes label.radio:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .modes .t { font-weight: 600; display: block; }
+  .modes .d { color: var(--text-muted); font-size: 0.88rem; display: block; }
+  dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-4); margin: var(--space-3) 0; }
+  dl.facts dt { color: var(--text-muted); }
+  dl.facts dd { margin: 0; font-family: var(--font-data); overflow-wrap: anywhere; }
+  footer { color: var(--text-muted); font-size: 0.85rem; padding: var(--space-5) 0; border-top: 1px solid var(--border); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .next-step { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between;
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-5); position: sticky; top: 0; z-index: 5; }
+  .next-step strong { margin-right: var(--space-2); }
+  progress { width: 100%; height: 12px; accent-color: var(--accent); }
+  .approval { border: 2px solid var(--accent); border-radius: var(--radius); padding: var(--space-4); margin: var(--space-3) 0; background: var(--surface-2); }
+  .approval h3 { margin-top: 0; }
+  .approval pre, pre.box { max-height: 260px; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-small);
+    padding: var(--space-3); font-family: var(--font-data); font-size: 0.8rem; white-space: pre; }
+  pre.box { white-space: pre-wrap; }
+  .check { display: flex; gap: var(--space-2); align-items: flex-start; font-weight: 400; margin: var(--space-2) 0; }
+  .check input { width: 24px; height: 24px; margin-top: 2px; flex: none; }
+  .glossary { margin: var(--space-2) 0 var(--space-3); }
+  .glossary p { margin: var(--space-1) 0 0; color: var(--text-muted); max-width: 72ch; }
+  td.answer { font-family: var(--font-data); white-space: pre-wrap; word-break: break-word; }
+  .mode-note { border-left: 4px solid var(--accent); padding: var(--space-2) var(--space-3); background: var(--surface-2); margin: 0; }
+  @media (max-width: 760px) {
+    nav.steps ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .next-step { position: static; }  /* a sticky bar would cover a third of a phone screen */
+    section.step, section.panel { padding: var(--space-4); }
+    .modes, .cols { grid-template-columns: minmax(0, 1fr); }
+    dl.facts { grid-template-columns: minmax(0, 1fr); }
+    dl.facts dd { margin-bottom: var(--space-2); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Weight Engineering Studio</h1>
+        <p>Find where a model goes wrong, change it with a small measured weight edit, keep or undo it.</p>
+      </div>
+      <div class="chips" aria-label="Workspace summary">
+        <span class="chip" id="chip-model">no workspace open</span>
+        <span class="chip" id="chip-head" hidden></span>
+        <button class="small" id="header-restore" type="button" hidden>Restore original</button>
+        <button class="small" id="theme-toggle" type="button" aria-pressed="false">Dark theme</button>
+      </div>
+    </div>
+    <nav class="views" aria-label="Views">
+      <button type="button" class="small" data-view="workspaces">Workspaces</button>
+      <button type="button" class="small" data-view="edit">Edit</button>
+      <button type="button" class="small" data-view="factory">Model factory</button>
+      <button type="button" class="small" data-view="improve">Self-improvement</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="global-error" class="status bad" role="alert" hidden></div>
+  <main id="main">
+
+  <!-- ===================================== Workspaces (CR2) ===================================== -->
+  <div class="view" id="view-workspaces" hidden>
+    <h2 class="view-title">Workspaces</h2>
+    <p class="view-lead">A workspace is one model with its edit history. Open one you used before, or create a new one from
+      the built-in demo, a Hugging Face model (checked before anything downloads) or a model folder.</p>
+
+    <section class="panel" aria-labelledby="h-current">
+      <h2 id="h-current">Current workspace</h2>
+      <p class="empty" id="ws-none">No workspace is open. Open one below or create one: the other views need a workspace.</p>
+      <dl class="facts" id="ws-facts" hidden></dl>
+    </section>
+
+    <section class="panel" aria-labelledby="h-open">
+      <h2 id="h-open">Open a workspace</h2>
+      <p class="lead">Recently opened workspaces and those in the Studio home (<span id="ws-home" class="mono"></span>).</p>
+      <p class="empty" id="ws-list-empty">No workspaces yet.</p>
+      <div class="table-wrap" id="ws-list-wrap" hidden>
+        <table>
+          <caption class="visually-hidden">Known workspaces</caption>
+          <thead><tr><th>Name</th><th>Model</th><th>Revision</th><th>Action</th></tr></thead>
+          <tbody id="ws-list"></tbody>
+        </table>
+      </div>
+      <div id="ws-open-status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-new">
+      <h2 id="h-new">New workspace</h2>
+      <div class="field"><label for="nw-name">Name (letters, digits, dot, dash or underscore)</label>
+        <input type="text" id="nw-name" maxlength="64" placeholder="e.g. my-first-edit"></div>
+      <fieldset>
+        <legend>Where the model comes from</legend>
+        <label class="radio"><input type="radio" name="nw-source" value="demo" checked> <span>Built-in demo (a tiny toy model with a planted repetition loop, works offline)</span></label>
+        <label class="radio"><input type="radio" name="nw-source" value="hub"> <span>A Hugging Face model (safetensors weights only, checked before download)</span></label>
+        <label class="radio"><input type="radio" name="nw-source" value="folder"> <span>A model folder already in the Studio's models folder</span></label>
+      </fieldset>
+      <div id="nw-hub" hidden>
+        <div class="row">
+          <div class="field grow"><label for="nw-repo">Model id</label><input type="text" id="nw-repo" maxlength="200" placeholder="organisation/model-name"></div>
+          <div class="field narrow"><label for="nw-rev">Revision</label><input type="text" id="nw-rev" maxlength="64" value="main"></div>
+          <div class="field narrow"><label for="nw-device">Device</label><select id="nw-device"></select></div>
+          <button type="button" id="nw-check">Check the model</button>
+        </div>
+        <p class="hint">The check reads the model's metadata from the Hub (sizes, hashes, licence, parameter count). Nothing downloads until you confirm.</p>
+        <div id="nw-check-status" aria-live="polite"></div>
+        <dl class="facts" id="nw-check-facts" hidden></dl>
+        <ul class="issues" id="nw-check-warnings" hidden></ul>
+      </div>
+      <div id="nw-folder-wrap" hidden>
+        <div class="field"><label for="nw-folder">Model folder</label><select id="nw-folder"></select>
+          <p class="hint">Folders inside the Studio's models folder that hold a config.json. Downloads land there too.</p></div>
+        <div class="field narrow"><label for="nw-folder-device">Device</label><select id="nw-folder-device"></select></div>
+      </div>
+      <div class="row"><button type="button" class="primary" id="nw-create">Create the workspace</button></div>
+      <div id="nw-progress-wrap" hidden>
+        <progress id="nw-progress" max="1" value="0" aria-label="Workspace creation progress"></progress>
+        <p class="hint" id="nw-progress-text"></p>
+        <button type="button" id="nw-cancel">Cancel</button>
+      </div>
+      <div id="nw-status" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <!-- ===================================== Edit ===================================== -->
+  <div class="view" id="view-edit" hidden>
+    <nav class="steps" aria-label="Steps">
+      <ol>
+        <li><a href="#step-connect" id="nav-connect"><span class="n">Step 1</span><span class="t">Connect a model</span></a></li>
+        <li><a href="#step-describe" id="nav-describe"><span class="n">Step 2</span><span class="t">Describe</span></a></li>
+        <li><a href="#step-diagnose" id="nav-diagnose"><span class="n">Step 3</span><span class="t">Diagnose</span></a></li>
+        <li><a href="#step-repair" id="nav-repair"><span class="n">Step 4</span><span class="t">Repair</span></a></li>
+        <li><a href="#step-keep" id="nav-keep"><span class="n">Step 5</span><span class="t">Keep or undo</span></a></li>
+      </ol>
+    </nav>
+
+    <div id="next-step" class="next-step" role="status" aria-live="polite">
+      <span><strong>Next:</strong><span id="next-text">loading the workspace...</span></span>
+      <button type="button" class="small primary" id="next-go">Go there</button>
+    </div>
+
+    <section class="step" id="step-connect" aria-labelledby="h-connect">
+      <h2 id="h-connect"><span class="n">1</span>Connect a frontier model</h2>
+      <p class="lead">A frontier model proposes the repairs and drafts prompts. Any OpenAI-compatible endpoint works; Poe is
+        the default because one key gives access to hundreds of models. Edits on real models are proposed only by the
+        model you choose here; offline templates exist only for the built-in toy demo.</p>
+      <div id="endpoint-status" class="status info" aria-live="polite">Checking the endpoint...</div>
+      <div class="row">
+        <div class="field grow">
+          <label for="model-select">Reasoning model from your endpoint (fetched at launch)</label>
+          <select id="model-select" disabled><option value="">Loading the list...</option></select>
+          <p class="hint" id="model-hint">The list comes from GET /models on your endpoint, filtered to models that reason, with the names your endpoint uses.</p>
+        </div>
+        <button type="button" id="model-refresh">Refresh list</button>
+        <button type="button" class="primary" id="model-save" disabled>Use this model</button>
+      </div>
+      <details>
+        <summary>How to change the endpoint or key</summary>
+        <p class="hint">Keys are read only from environment variables and never shown here. Before starting the
+          Studio, set for example <code>POE_API_KEY</code> (Poe), or <code>WEIGHTLAB_LLM_BASE_URL</code> plus
+          <code>WEIGHTLAB_LLM_KEY_ENV</code> for another provider. Run <code>neuroforge doctor</code> to check.</p>
+      </details>
+    </section>
+
+    <section class="step" id="step-describe" aria-labelledby="h-describe">
+      <h2 id="h-describe"><span class="n">2</span>Describe the change</h2>
+      <fieldset>
+        <legend>What do you want to change?</legend>
+        <div class="modes">
+          <label class="radio"><input type="radio" name="mode" value="fix" checked> <span><span class="t">Fix a failure</span><span class="d">Prompts where the model fails, what it should say, and prompts that must not change.</span></span></label>
+          <label class="radio"><input type="radio" name="mode" value="facts"> <span><span class="t">Update facts</span><span class="d">Make prompts about a subject complete with a new answer; neighbours stay as they are.</span></span></label>
+          <label class="radio"><input type="radio" name="mode" value="direction"> <span><span class="t">Adjust a behaviour</span><span class="d">Turn a behaviour down or up, using two prompt sets that differ only in it.</span></span></label>
+        </div>
+      </fieldset>
+
+      <!-- Fix a failure: the intent editor -->
+      <div id="mode-fix">
+        <p class="lead">The intent lists prompts where the model fails (and what it should say instead) and prompts where
+          it must not change. Steps 3 to 5 are measured against it.</p>
+        <div id="intent-status" class="status info" aria-live="polite">Loading the intent...</div>
+        <details class="glossary"><summary>What is an intent?</summary>
+          <p>A short file that says where the model fails (prompts plus the answer you want instead), which prompts must
+            keep their behaviour, and how a fix is scored. The diagnosis, every repair and every check use it.</p></details>
+        <div class="row">
+          <div class="field grow"><label for="example-select">Start from an example</label>
+            <select id="example-select"><option value="">Loading examples...</option></select></div>
+          <button type="button" id="example-load">Load into the editor</button>
+        </div>
+        <div class="field">
+          <label for="intent-description">Plain-language description (for drafting with your frontier model)</label>
+          <input type="text" id="intent-description" maxlength="4000" placeholder="e.g. Stop repeating the same phrase in answers about weather">
+          <p class="hint">Drafting needs a model from step 1. The draft appears in the editor below; review it before saving.</p>
+        </div>
+        <div class="row"><button type="button" id="intent-draft" disabled>Draft the intent with the frontier model</button></div>
+        <div class="field">
+          <label for="intent-yaml">Intent (YAML)</label>
+          <textarea id="intent-yaml" spellcheck="false" aria-describedby="intent-yaml-hint"></textarea>
+          <p class="hint" id="intent-yaml-hint">Validated against the schema when you save. Saved as intent.yaml in the workspace.</p>
+        </div>
+        <div class="row"><button type="button" class="primary" id="intent-save">Validate and save</button>
+          <button type="button" id="preview-run">Show the model's current answers</button></div>
+        <div id="preview-status" aria-live="polite"></div>
+        <div class="table-wrap" hidden id="preview-wrap">
+          <table>
+            <caption class="visually-hidden">Current answers for the intent prompts</caption>
+            <thead><tr><th>Prompt</th><th>Role</th><th>Wanted</th><th>Current answer</th></tr></thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Update facts (CR6) -->
+      <div id="mode-facts" hidden>
+        <p class="lead">Each fact is a prompt about a subject and the new answer it should get. The edit is computed in
+          closed form over a few layers, inside the weight budget, and kept away from the inputs of the neighbour and
+          general prompts. You see every result before anything is applied, and the batch is one patch you can undo.</p>
+        <p class="status warn" id="facts-toy-note" hidden></p>
+        <div class="field">
+          <label for="facts-csv">Facts (CSV: prompt, new_object, old_object, subject, paraphrases, neighbours)</label>
+          <textarea id="facts-csv" spellcheck="false" aria-describedby="facts-csv-hint"></textarea>
+          <p class="hint" id="facts-csv-hint">One fact per row. Separate several paraphrases or neighbours with |. The subject
+            (for example France) must appear in the prompt; the edit is keyed on it, so rewordings that mention it change too.</p>
+        </div>
+        <details>
+          <summary>Add a fact with a form</summary>
+          <div class="row">
+            <div class="field grow"><label for="ff-prompt">Prompt</label><input type="text" id="ff-prompt" maxlength="400" placeholder="The capital of Exampleland is"></div>
+            <div class="field"><label for="ff-subject">Subject</label><input type="text" id="ff-subject" maxlength="200" placeholder="Exampleland"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="ff-new">New answer</label><input type="text" id="ff-new" maxlength="200" placeholder=" Newtown"></div>
+            <div class="field"><label for="ff-old">Old answer (optional)</label><input type="text" id="ff-old" maxlength="200" placeholder=" Oldtown"></div>
+          </div>
+          <div class="row">
+            <div class="field grow"><label for="ff-para">Paraphrases (separate with |)</label><input type="text" id="ff-para" maxlength="2000"></div>
+            <div class="field grow"><label for="ff-neigh">Neighbours that must not change (separate with |)</label><input type="text" id="ff-neigh" maxlength="2000"></div>
+          </div>
+          <div class="row"><button type="button" id="ff-draft" disabled>Draft paraphrases and neighbours with the frontier model</button>
+            <button type="button" id="ff-add">Add this fact to the table</button></div>
+        </details>
+        <div class="row">
+          <div class="field narrow"><label for="facts-layers">Layers</label><input type="text" id="facts-layers" maxlength="80" placeholder="automatic"></div>
+          <div class="field narrow"><label for="facts-budget">Weight budget (%)</label><input type="number" id="facts-budget" min="0.001" max="5" step="0.001"></div>
+          <div class="field narrow"><label for="facts-margin">Lead needed (nats)</label><input type="number" id="facts-margin" min="0.05" max="5" step="0.05" value="1"></div>
+        </div>
+        <p class="hint" id="facts-layers-hint"></p>
+        <div class="row"><button type="button" id="facts-example">Load the example</button>
+          <button type="button" id="facts-check">Check the table</button>
+          <button type="button" class="primary" id="facts-preview">Preview the edit</button></div>
+        <div id="facts-progress-wrap" hidden>
+          <progress id="facts-progress" max="1" value="0" aria-label="Fact preview progress"></progress>
+          <p class="hint" id="facts-progress-text"></p>
+          <button type="button" id="facts-cancel">Cancel</button>
+        </div>
+        <div id="facts-status" aria-live="polite"></div>
+        <ul class="issues" id="facts-violations" hidden></ul>
+        <ul class="notes" id="facts-notes" hidden></ul>
+        <div class="table-wrap" id="facts-wrap" hidden>
+          <table>
+            <caption class="visually-hidden">Facts and their measured results</caption>
+            <thead id="facts-head"></thead>
+            <tbody id="facts-body"></tbody>
+          </table>
+        </div>
+        <div class="row"><button type="button" class="primary" id="facts-apply" disabled>Apply this edit</button></div>
+      </div>
+
+      <!-- Adjust a behaviour (CR6) -->
+      <div id="mode-direction" hidden>
+        <p class="lead">Give two prompt sets that differ only in the behaviour (for example the same sentences with and
+          without exclamation marks). The tool measures how strongly each layer carries the difference, then removes or
+          amplifies it in the few weight columns that write it. KL to the original model is measured before you apply.</p>
+        <div class="row"><div class="field grow"><label for="dir-name">Name</label><input type="text" id="dir-name" maxlength="64" value="behaviour"></div></div>
+        <div class="cols">
+          <div class="field"><label for="dir-pos">Prompts that show the behaviour (one per line)</label><textarea id="dir-pos" class="short" spellcheck="false"></textarea></div>
+          <div class="field"><label for="dir-neg">The same prompts without it (one per line)</label><textarea id="dir-neg" class="short" spellcheck="false"></textarea></div>
+        </div>
+        <div class="row">
+          <div class="field grow"><label for="dir-desc">Describe the behaviour (for drafting both sets)</label><input type="text" id="dir-desc" maxlength="1000" placeholder="e.g. answers end with exclamation marks"></div>
+          <button type="button" id="dir-draft" disabled>Draft both sets with the frontier model</button>
+          <button type="button" id="dir-example">Load the example</button>
+        </div>
+        <div class="row">
+          <div class="field narrow"><label for="dir-layer">Layer</label><select id="dir-layer"><option value="">suggested</option></select></div>
+          <div class="field narrow"><label for="dir-budget">Weight budget (%)</label><input type="number" id="dir-budget" min="0.001" max="5" step="0.001"></div>
+          <div class="field grow"><label for="dir-strength">Strength: <output id="dir-strength-out" for="dir-strength">reduce it fully</output></label>
+            <input type="range" id="dir-strength" min="-1" max="1" step="0.1" value="1" aria-describedby="dir-strength-hint">
+            <p class="hint" id="dir-strength-hint">Positive values reduce the behaviour, negative values amplify it. Preview again after changing it.</p></div>
+        </div>
+        <div class="row"><button type="button" class="primary" id="dir-preview">Preview the edit</button></div>
+        <div id="dir-progress-wrap" hidden>
+          <progress id="dir-progress" max="1" value="0" aria-label="Direction preview progress"></progress>
+          <p class="hint" id="dir-progress-text"></p>
+        </div>
+        <div id="dir-status" aria-live="polite"></div>
+        <ul class="issues" id="dir-violations" hidden></ul>
+        <div class="table-wrap" id="dir-layers-wrap" hidden>
+          <table>
+            <caption>How strongly each layer carries the behaviour (separation in standard deviations)</caption>
+            <thead><tr><th>Layer</th><th>Strength</th><th class="num">Separation</th></tr></thead>
+            <tbody id="dir-layers"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap" id="dir-answers-wrap" hidden>
+          <table>
+            <caption>Answers before and after (greedy, 12 tokens)</caption>
+            <thead><tr><th>Prompt</th><th>Before</th><th>After</th></tr></thead>
+            <tbody id="dir-answers"></tbody>
+          </table>
+        </div>
+        <div class="row"><button type="button" class="primary" id="dir-apply" disabled>Apply this edit</button></div>
+      </div>
+    </section>
+
+    <section class="step" id="step-diagnose" aria-labelledby="h-diagnose">
+      <h2 id="h-diagnose"><span class="n">3</span>Diagnose</h2>
+      <p class="mode-note other-mode" hidden>Steps 3 and 4 belong to "Fix a failure". In the other modes the preview and
+        the apply button are in step 2; step 5 keeps, undoes or exports every edit.</p>
+      <div class="fix-only">
+        <p class="lead">Compares the model's internal activity on the failing and passing prompts and ranks the layers
+          that push it toward the failure, with the weight columns most responsible.</p>
+        <details class="glossary"><summary>What does "divergence" mean?</summary>
+          <p>How differently a layer behaves on the failing prompts compared with the passing ones. The layer with the
+            highest score contributes most to the failure; the culprit columns are the weights in that layer most aligned
+            with the failure.</p></details>
+        <div class="row"><button type="button" class="primary" id="probe-run">Run diagnosis</button></div>
+        <div id="probe-status" aria-live="polite"></div>
+        <p class="empty" id="probe-empty">No diagnosis yet.</p>
+        <div class="table-wrap" hidden id="probe-wrap">
+          <table>
+            <caption class="visually-hidden">Layers ranked by divergence</caption>
+            <thead><tr><th>Layer</th><th>Divergence</th><th class="num">Score</th><th>Tensor</th><th>Culprit columns</th></tr></thead>
+            <tbody id="probe-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="step-repair" aria-labelledby="h-repair">
+      <h2 id="h-repair"><span class="n">4</span>Repair</h2>
+      <p class="mode-note other-mode" hidden>This step belongs to "Fix a failure".</p>
+      <div class="fix-only">
+        <p class="lead">Each iteration proposes several candidate edits, measures each one on your prompts, rejects any
+          that break the invariants or the size limits, and commits the best feasible edit to the history.
+          "Goal shortfall" is how far the goals still are (0 means met); "invariant budget used" is the worst change on
+          prompts that must not change, as a share of what your intent allows ("improved" means it got closer to the
+          reference). "Weights targeted" counts the weights the edit script changes; nullspace protection can add a small
+          correction to other entries of the same tensors, which is stored in the patch and counted in the norm checks.</p>
+        <fieldset>
+          <legend>Who proposes the edits</legend>
+          <label class="radio"><input type="radio" name="proposer" value="llm" id="proposer-llm" disabled> <span id="proposer-llm-label">The frontier model chosen in step 1 (choose one first)</span></label>
+          <label class="radio"><input type="radio" name="proposer" value="templates" id="proposer-templates"> <span id="proposer-templates-label">Offline demo templates (toy models only, no LLM)</span></label>
+        </fieldset>
+        <fieldset>
+          <legend>Control</legend>
+          <label class="check"><input type="checkbox" id="opt-approve" checked> <span>Ask me before each edit is applied
+            (you see the proposed script, its size and its measured effect)</span></label>
+          <label class="check"><input type="checkbox" id="opt-dry"> <span>Dry run: evaluate candidates, change nothing</span></label>
+          <div class="field"><label for="opt-protected">Protected tensors (optional, comma-separated name parts)</label>
+            <input type="text" id="opt-protected" maxlength="400" placeholder="e.g. layers.0.self_attn">
+            <p class="hint">Any candidate that changes a matching tensor is rejected, with the reason shown.</p></div>
+        </fieldset>
+        <div class="row">
+          <div class="field"><label for="loop-iterations">Iterations (1-10)</label><input type="number" id="loop-iterations" min="1" max="10" value="3"></div>
+          <div class="field"><label for="loop-candidates">Candidates per iteration (1-8)</label><input type="number" id="loop-candidates" min="1" max="8" value="3"></div>
+          <button type="button" class="primary" id="loop-run">Start repair</button>
+        </div>
+        <div id="loop-status" aria-live="polite"></div>
+        <div id="loop-progress-wrap" hidden>
+          <progress id="loop-progress" max="1" value="0" aria-label="Repair progress"></progress>
+          <p class="hint" id="loop-progress-text"></p>
+          <button type="button" id="loop-cancel">Cancel the repair</button>
+        </div>
+        <div class="approval" id="approval" hidden></div>
+        <p class="empty" id="loop-empty">No repair run yet.</p>
+        <div class="table-wrap" hidden id="loop-wrap">
+          <table>
+            <caption class="visually-hidden">Candidates evaluated in each iteration</caption>
+            <thead><tr><th class="num">Iteration</th><th>Candidate</th><th>Result</th><th class="num">Goal shortfall (0 = met)</th><th class="num">Invariant budget used</th><th class="num">Weights targeted</th></tr></thead>
+            <tbody id="loop-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="step-keep" aria-labelledby="h-keep">
+      <h2 id="h-keep"><span class="n">5</span>Keep, undo or export</h2>
+      <p class="lead">Every committed edit (repairs, fact batches and behaviour edits) is stored as a small patch. Restore
+        any point, including the original model, exactly. Export writes files to the workspace's exports folder.</p>
+      <div class="row">
+        <button type="button" id="restore-root">Restore the original model</button>
+        <div class="field"><label for="export-format">Export format</label>
+          <select id="export-format">
+            <option value="safetensors">Full model with edits (safetensors)</option>
+            <option value="sparse">Only the edit (sparse safetensors)</option>
+            <option value="lora">LoRA adapter (PEFT)</option>
+            <option value="hf">Hugging Face folder</option>
+            <option value="bundle">Edit bundle (patch, history, intent, model card, checksums)</option>
+          </select></div>
+        <button type="button" class="primary" id="export-run">Export current state</button>
+      </div>
+      <div id="keep-status" aria-live="polite"></div>
+      <p class="empty" id="history-empty">No edits committed yet.</p>
+      <div class="table-wrap" hidden id="history-wrap">
+        <table>
+          <caption class="visually-hidden">Committed edits, newest first</caption>
+          <thead><tr><th>Patch</th><th>Intent</th><th class="num">Weights targeted</th><th>Why</th><th>Action</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+      <div class="fix-only">
+        <h3>Answers: original model and current state</h3>
+        <p class="hint">Generated now for every intent prompt, greedy decoding, so the two columns are directly comparable.</p>
+        <div class="row"><button type="button" id="compare-run">Compare answers</button></div>
+        <div id="compare-status" aria-live="polite"></div>
+        <div class="table-wrap" hidden id="compare-wrap">
+          <table>
+            <caption class="visually-hidden">Original and current answers</caption>
+            <thead><tr><th>Prompt</th><th>Role</th><th>Original answer</th><th>Current answer</th><th>Changed</th></tr></thead>
+            <tbody id="compare-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================================== Model factory (CR9) ===================================== -->
+  <div class="view" id="view-factory" hidden>
+    <h2 class="view-title">Model factory</h2>
+    <p class="view-lead">Specialise the model for one job and measure it on tasks with automatic checks. The factory runs
+      the baseline, a prompt-only baseline (the best system prompt from the suite), a guarded repair on the failing
+      training tasks, and the edited model again. Held-out tasks are never shown to the proposer. Packaging is offered
+      only when the edited model beats both baselines.</p>
+
+    <section class="panel" aria-labelledby="h-suite">
+      <h2 id="h-suite">Task suite</h2>
+      <p class="lead">Tasks are checked by Python unit tests or SQL result rows (run in an isolated child process with no
+        network) or by simple text checks. Mark each task with split: train or split: heldout (held-out tasks only measure, they never guide the repair).</p>
+      <div class="row">
+        <div class="field grow"><label for="fx-example">Start from an example</label><select id="fx-example"></select></div>
+        <button type="button" id="fx-load">Load into the editor</button>
+        <button type="button" id="fx-draft" disabled>Draft system prompts with the frontier model</button>
+      </div>
+      <div class="field"><label for="fx-yaml">Suite (YAML)</label><textarea id="fx-yaml" spellcheck="false"></textarea></div>
+      <pre class="box" id="fx-drafts" hidden></pre>
+      <fieldset>
+        <legend>Who proposes the repairs</legend>
+        <label class="radio"><input type="radio" name="fx-proposer" value="llm" id="fx-proposer-llm" disabled> <span id="fx-proposer-llm-label">The frontier model chosen in Edit, step 1</span></label>
+        <label class="radio"><input type="radio" name="fx-proposer" value="templates" id="fx-proposer-templates"> <span>Offline demo templates (toy models only)</span></label>
+      </fieldset>
+      <div class="row">
+        <div class="field narrow"><label for="fx-iterations">Iterations</label><input type="number" id="fx-iterations" min="1" max="10" value="2"></div>
+        <div class="field narrow"><label for="fx-candidates">Candidates</label><input type="number" id="fx-candidates" min="1" max="8" value="3"></div>
+        <label class="check"><input type="checkbox" id="fx-approve" checked> <span>Ask me before each edit is applied</span></label>
+      </div>
+      <div class="row"><button type="button" class="primary" id="fx-run">Run the factory</button></div>
+      <div id="fx-progress-wrap" hidden>
+        <progress id="fx-progress" max="1" value="0" aria-label="Factory progress"></progress>
+        <p class="hint" id="fx-progress-text"></p>
+        <button type="button" id="fx-cancel">Cancel</button>
+      </div>
+      <div class="approval" id="fx-approval" hidden></div>
+      <div id="fx-status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-fx-report">
+      <h2 id="h-fx-report">Report</h2>
+      <div class="row">
+        <div class="field grow"><label for="fx-runs">Earlier runs</label><select id="fx-runs"></select></div>
+        <button type="button" id="fx-open">Show this run</button>
+      </div>
+      <p class="empty" id="fx-empty">No factory run yet.</p>
+      <div id="fx-report" hidden>
+        <div id="fx-verdict" aria-live="polite"></div>
+        <div class="table-wrap">
+          <table>
+            <caption>pass@1 per split (share of tasks whose check passed)</caption>
+            <thead><tr><th>Model</th><th class="num">Training tasks</th><th class="num">Held-out tasks</th></tr></thead>
+            <tbody id="fx-summary"></tbody>
+          </table>
+        </div>
+        <ul class="notes" id="fx-notes" hidden></ul>
+        <div class="table-wrap">
+          <table>
+            <caption>Every task: the recorded check result before and after</caption>
+            <thead><tr><th>Task</th><th>Split</th><th>Baseline</th><th>After</th><th>Answer after (or before)</th></tr></thead>
+            <tbody id="fx-tasks"></tbody>
+          </table>
+        </div>
+        <h3>Package the edited model</h3>
+        <p class="hint">An MCP server or an agent skill that calls the edited local model. Generated from fixed templates;
+          your suite's text goes only into tool_config.json. It is written inside the workspace:
+          <span class="mono" id="fx-dest">-</span>.</p>
+        <div class="row">
+          <div class="field"><label for="fx-kind">Package type</label>
+            <select id="fx-kind"><option value="mcp">MCP server (stdio)</option><option value="skill">Agent skill (SKILL.md + script)</option></select></div>
+          <button type="button" class="primary" id="fx-package" disabled>Write the package</button>
+        </div>
+        <div id="fx-package-status" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================================== Self-improvement (CR10) ===================================== -->
+  <div class="view" id="view-improve" hidden>
+    <h2 class="view-title">Self-improvement</h2>
+    <p class="view-lead">Runs repeated edit generations on the workspace's original model, separately from the Edit
+      history. Each generation diagnoses the failing prompts of your intent (step 2), asks the proposer for candidate
+      edits, and promotes the best one only if every guardrail passes. Every candidate and the gate that rejected it are
+      recorded below.</p>
+
+    <section class="panel" aria-labelledby="h-si-guard">
+      <h2 id="h-si-guard">Guardrails</h2>
+      <div class="row">
+        <div class="field narrow"><label for="si-generations">Generations this run</label><input type="number" id="si-generations" min="1" max="50" value="3"></div>
+        <div class="field narrow"><label for="si-kl">Anchor KL limit</label><input type="number" id="si-kl" min="0.001" max="1" step="0.001" value="0.08"></div>
+        <div class="field narrow"><label for="si-candidates">Candidates per generation</label><input type="number" id="si-candidates" min="1" max="8" value="3"></div>
+        <div class="field narrow"><label for="si-meta">Share of meta steps</label><input type="number" id="si-meta" min="0" max="1" step="0.05" value="0"></div>
+      </div>
+      <div class="field"><label for="si-protected">Protected tensors (comma-separated name parts)</label><input type="text" id="si-protected" maxlength="400" placeholder="e.g. layers.0.self_attn"></div>
+      <div class="row">
+        <div class="field grow"><label for="si-forgetting">Forgetting check: held-out "prompt => expected answer" lines</label>
+          <textarea id="si-forgetting" class="short" spellcheck="false" placeholder="The capital of France is => Paris"></textarea>
+          <p class="hint">A candidate that makes these answers less likely than allowed is not promoted.</p></div>
+        <div class="field narrow"><label for="si-drop">Allowed drop (nats)</label><input type="number" id="si-drop" min="0" max="5" step="0.01" value="0.05"></div>
+      </div>
+      <fieldset>
+        <legend>Who proposes the edits</legend>
+        <label class="radio"><input type="radio" name="si-proposer" value="llm" id="si-proposer-llm" disabled> <span id="si-proposer-llm-label">The frontier model chosen in Edit, step 1</span></label>
+        <label class="radio"><input type="radio" name="si-proposer" value="templates" id="si-proposer-templates"> <span>Offline demo templates (toy models only)</span></label>
+      </fieldset>
+      <div class="row">
+        <button type="button" class="primary" id="si-start">Start or resume</button>
+        <button type="button" id="si-pause" disabled>Pause after this generation</button>
+        <button type="button" class="danger" id="si-stop" disabled>Stop now</button>
+        <button type="button" id="si-rollback">Roll back one generation</button>
+      </div>
+      <div id="si-progress-wrap" hidden>
+        <progress id="si-progress" max="1" value="0" aria-label="Self-improvement progress"></progress>
+        <p class="hint" id="si-progress-text"></p>
+      </div>
+      <div class="approval" id="si-rollback-box" hidden>
+        <h3>Roll back one generation?</h3>
+        <p id="si-rollback-text"></p>
+        <div class="row"><button type="button" class="primary" id="si-rollback-yes">Roll it back</button>
+          <button type="button" id="si-rollback-no">Keep it</button></div>
+      </div>
+      <div id="si-status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-si-timeline">
+      <h2 id="h-si-timeline">Timeline</h2>
+      <p class="empty" id="si-empty">No generation yet.</p>
+      <div class="table-wrap" id="si-wrap" hidden>
+        <table>
+          <caption class="visually-hidden">Steps, newest first</caption>
+          <thead><tr><th class="num">Step</th><th>Kind</th><th>Result</th><th class="num">Generation</th><th class="num">Anchor KL</th><th class="num">Hit rate</th><th>Candidates and the gate that decided</th></tr></thead>
+          <tbody id="si-timeline"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  </main>
+
+  <footer>
+    Every number on this page is measured on your machine for this workspace. Nothing is pre-filled.
+    The server only answers this page (same origin, per-session token). Stop it with Ctrl+C in its terminal.
+  </footer>
+</div>
+
+<script nonce="__CSP_NONCE__">
+(() => {
+  "use strict";
+  const token = document.querySelector('meta[name="studio-token"]').content;
+  const $ = (id) => document.getElementById(id);
+  const state = { status: null, models: null, intentExists: false, probed: false, repaired: false, jobState: null,
+    view: "workspaces", mode: "fix", modes: null, workspaces: null, factPlan: null, dirPlan: null, fxReport: null };
+
+  // --- helpers -----------------------------------------------------------------------------------------------
+  function setStatus(el, kind, text) { el.className = "status " + kind; el.textContent = text; el.hidden = false; }
+  function clearChildren(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+  function cell(row, text, cls) {
+    const td = document.createElement("td");
+    if (cls) td.className = cls;
+    td.textContent = text === null || text === undefined ? "-" : String(text);
+    row.appendChild(td);
+    return td;
+  }
+  function headRow(thead, labels) {
+    clearChildren(thead);
+    const tr = document.createElement("tr");
+    for (const l of labels) { const th = document.createElement("th"); th.textContent = l; tr.appendChild(th); }
+    thead.appendChild(tr);
+  }
+  function badge(td, kind, text) { const b = document.createElement("span"); b.className = "badge " + kind; b.textContent = text; td.appendChild(b); }
+  function fmt(n, digits) { return n === null || n === undefined ? "-" : Number(n).toFixed(digits); }
+  // Small measured values (KL of a surgical edit) would round to 0.0000 and read as "no change": show them exactly.
+  function fmtSmall(n) { if (n === null || n === undefined) return "-"; const v = Number(n); return v !== 0 && Math.abs(v) < 0.001 ? v.toExponential(1) : v.toFixed(4); }
+  function pct(n) { return n === null || n === undefined ? "-" : Math.round(n * 100) + "%"; }
+  function gb(n) { return n === null || n === undefined ? "unknown" : (n / 1073741824).toFixed(2) + " GB"; }
+  function listInto(el, items) { clearChildren(el); for (const t of items) { const li = document.createElement("li"); li.textContent = t; el.appendChild(li); } el.hidden = items.length === 0; }
+  function dlInto(el, pairs) {
+    clearChildren(el);
+    for (const [k, v] of pairs) {
+      const dt = document.createElement("dt"); dt.textContent = k; el.appendChild(dt);
+      const dd = document.createElement("dd"); dd.textContent = v === null || v === undefined || v === "" ? "-" : String(v); el.appendChild(dd);
+    }
+    el.hidden = false;
+  }
+  function radioValue(name) { const r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
+  function lines(text) { return text.split("\n").map((s) => s.trim()).filter((s) => s.length > 0); }
+
+  async function api(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body !== undefined) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.headers["X-Studio-Token"] = token;
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(path, opts);
+    let data = {};
+    try { data = await res.json(); } catch (e) { data = { error: "unreadable response" }; }
+    if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+    return data;
+  }
+  function showError(err) { setStatus($("global-error"), "bad", String(err.message || err)); }
+  function clearError() { $("global-error").hidden = true; }
+
+  // Generic job watcher: progress, approval, done, failed or cancelled.
+  function watchJob(jobId, ui) {
+    const tick = async () => {
+      let j;
+      try { j = await api("GET", "/api/jobs/" + jobId); } catch (e) { ui.finish(); showError(e); return; }
+      if (j.state === "running" || j.state === "awaiting_approval") {
+        if (ui.progress) {
+          const p = j.progress || { text: "starting...", fraction: 0 };
+          ui.progress.wrap.hidden = false;
+          ui.progress.bar.value = p.fraction;
+          ui.progress.text.textContent = p.text + " (" + Math.round(Date.now() / 1000 - j.started) + " s)";
+        }
+        if (j.state === "awaiting_approval" && ui.approval) { renderApproval(ui.approval, j, (ok) => decide(jobId, ok, ui, tick)); return; }
+        setTimeout(tick, 1000);
+        return;
+      }
+      if (ui.progress) ui.progress.wrap.hidden = true;
+      if (ui.approval) ui.approval.hidden = true;
+      ui.finish();
+      if (j.state === "done") ui.done(j.result); else ui.failed(j);
+    };
+    tick();
+  }
+  async function decide(jobId, approve, ui, tick) {
+    ui.approval.hidden = true;
+    try { await api("POST", "/api/jobs/" + jobId + "/decision", { approve }); } catch (e) { showError(e); }
+    setTimeout(tick, 300);
+  }
+  function budgetText(v) {
+    if (v === null || v === undefined) return "-";
+    if (v < 0) return "improved";
+    return Math.round(v * 100) + "% of budget";
+  }
+  function renderApproval(box, job, onDecide) {
+    const a = job.awaiting;
+    clearChildren(box);
+    const h = document.createElement("h3"); h.textContent = "Apply this edit?"; box.appendChild(h);
+    const p = document.createElement("p"); p.textContent = a.hypothesis; box.appendChild(p);
+    const ul = document.createElement("ul");
+    const tensors = (a.tensors || []).map((t) => t.tensor + " (" + t.modified + " weights)").join(", ");
+    for (const [k, v] of [["Goal shortfall", a.target_score === null ? "-" : (a.target_score >= 0 ? "met" : fmt(a.target_score, 3))],
+      ["Invariant budget used", budgetText(a.invariant_degradation)], ["Weights targeted", a.modified_params.toLocaleString()],
+      ["Tensors", tensors || "-"], ["Proposed by", a.source]]) {
+      const li = document.createElement("li"); li.textContent = k + ": " + v; ul.appendChild(li);
+    }
+    box.appendChild(ul);
+    const det = document.createElement("details");
+    const sum = document.createElement("summary"); sum.textContent = "Show the proposed script"; det.appendChild(sum);
+    const pre = document.createElement("pre"); pre.textContent = a.script; det.appendChild(pre);
+    box.appendChild(det);
+    const row = document.createElement("div"); row.className = "row";
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "primary"; yes.textContent = "Apply this edit";
+    const no = document.createElement("button"); no.type = "button"; no.textContent = "Reject it and continue";
+    yes.addEventListener("click", () => onDecide(true));
+    no.addEventListener("click", () => onDecide(false));
+    row.appendChild(yes); row.appendChild(no); box.appendChild(row);
+    box.hidden = false;
+    yes.focus();
+  }
+
+  // --- theme -------------------------------------------------------------------------------------------------
+  const root = document.documentElement;
+  function readTheme() { try { return localStorage.getItem("ws-theme"); } catch (e) { return null; } }
+  function writeTheme(v) { try { localStorage.setItem("ws-theme", v); } catch (e) { /* storage blocked: theme lasts this visit */ } }
+  const saved = readTheme();
+  if (saved === "dark" || saved === "light") root.dataset.theme = saved;
+  function syncThemeButton() {
+    const dark = root.dataset.theme === "dark" || (root.dataset.theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+    $("theme-toggle").textContent = dark ? "Light theme" : "Dark theme";
+    $("theme-toggle").setAttribute("aria-pressed", String(dark));
+  }
+  $("theme-toggle").addEventListener("click", () => {
+    const dark = $("theme-toggle").getAttribute("aria-pressed") === "true";
+    root.dataset.theme = dark ? "light" : "dark";
+    writeTheme(root.dataset.theme);
+    syncThemeButton();
+  });
+  syncThemeButton();
+
+  // --- views -------------------------------------------------------------------------------------------------
+  function showView(name) {
+    const hasWs = !!(state.status && state.status.workspace);
+    if (name !== "workspaces" && !hasWs) name = "workspaces";
+    state.view = name;
+    for (const btn of document.querySelectorAll("nav.views button")) {
+      const v = btn.dataset.view;
+      btn.disabled = v !== "workspaces" && !hasWs;
+      if (v === name) btn.setAttribute("aria-current", "page"); else btn.removeAttribute("aria-current");
+    }
+    for (const v of ["workspaces", "edit", "factory", "improve"]) $("view-" + v).hidden = v !== name;
+    if (name === "improve") loadImprove().catch(showError);
+    if (name === "factory") loadFactoryRuns().catch(showError);
+    if (name === "workspaces") loadWorkspaces().catch(showError);
+  }
+  for (const btn of document.querySelectorAll("nav.views button")) btn.addEventListener("click", () => { clearError(); showView(btn.dataset.view); });
+
+  // --- status, steps ------------------------------------------------------------------------------------------
+  function markSteps() {
+    const s = state.status;
+    const llmChosen = !!(s && s.llm && s.llm.selected);
+    $("nav-connect").dataset.state = llmChosen ? "done" : "";
+    $("nav-describe").dataset.state = state.intentExists ? "done" : "";
+    $("nav-diagnose").dataset.state = state.probed ? "done" : "";
+    $("nav-repair").dataset.state = state.repaired ? "done" : "";
+    $("nav-keep").dataset.state = s && s.commits > 0 ? "done" : "";
+    computeNext();
+  }
+  function computeNext() {
+    const s = state.status;
+    if (!s || !s.workspace) return;
+    let text = "", target = "step-connect";
+    if (state.jobState === "awaiting_approval") { text = "a candidate edit is waiting for your decision in step 4."; target = "step-repair"; }
+    else if (state.jobState === "running") { text = "a repair is running in step 4; you can watch or cancel it."; target = "step-repair"; }
+    else if (state.mode === "facts") { text = "write the facts, preview the edit and apply it in step 2."; target = "step-describe"; }
+    else if (state.mode === "direction") { text = "give the two prompt sets, preview the edit and apply it in step 2."; target = "step-describe"; }
+    else if (!state.intentExists) { text = "describe what to fix: load an example or draft an intent in step 2."; target = "step-describe"; }
+    else if (!state.probed) { text = "run the diagnosis in step 3 to see which layers cause the failure."; target = "step-diagnose"; }
+    else if (!state.repaired && s.commits === 0) { text = "start a repair in step 4 (you approve each edit before it is applied)."; target = "step-repair"; }
+    else { text = "compare answers, keep or export the result, or restore the original model in step 5."; target = "step-keep"; }
+    $("next-text").textContent = " " + text;
+    $("next-go").onclick = () => { document.getElementById(target).scrollIntoView({ behavior: "smooth" }); };
+    $("header-restore").hidden = !(s.head && s.head !== "ROOT");
+  }
+
+  function setProposerChoice(llmInput, llmLabel, templatesInput, prefix) {
+    const s = state.status;
+    const llmReady = !!s.llm.selected;
+    llmInput.disabled = !llmReady;
+    llmLabel.textContent = llmReady ? (prefix + ": " + s.llm.selected) : (prefix + " (choose one in Edit, step 1)");
+    templatesInput.disabled = !s.toy;
+    if (llmReady && (!templatesInput.checked || !s.toy)) llmInput.checked = true;
+    else if (!llmReady && s.toy) templatesInput.checked = true;
+    if (!llmReady && !s.toy) { llmInput.checked = false; templatesInput.checked = false; }
+  }
+
+  async function loadStatus() {
+    const s = await api("GET", "/api/status");
+    state.status = s;
+    if (!s.workspace) {
+      $("chip-model").textContent = "no workspace open";
+      $("chip-head").hidden = true;
+      $("header-restore").hidden = true;
+      return s;
+    }
+    $("chip-model").textContent = "model: " + s.model + " (" + s.family + ", " + s.layers + " layers, " + s.parameters.toLocaleString() + " weights)";
+    $("chip-head").hidden = false;
+    $("chip-head").textContent = s.workspace + ": " + s.commits + " edit(s), at " + (s.head === "ROOT" ? "original" : s.head.slice(0, 10));
+    setProposerChoice($("proposer-llm"), $("proposer-llm-label"), $("proposer-templates"), "The frontier model chosen in step 1");
+    $("proposer-templates-label").textContent = s.toy ? "Offline demo templates (toy model, no LLM)" : "Offline demo templates (only for the toy models; this workspace uses a real model)";
+    setProposerChoice($("fx-proposer-llm"), $("fx-proposer-llm-label"), $("fx-proposer-templates"), "The frontier model chosen in Edit, step 1");
+    setProposerChoice($("si-proposer-llm"), $("si-proposer-llm-label"), $("si-proposer-templates"), "The frontier model chosen in Edit, step 1");
+    const llmReady = !!s.llm.selected;
+    for (const id of ["intent-draft", "ff-draft", "dir-draft", "fx-draft"]) $(id).disabled = !llmReady;
+    markSteps();
+    return s;
+  }
+
+  // --- step 1: models -------------------------------------------------------------------------------------------
+  async function loadModels(refresh) {
+    const m = await api("GET", "/api/llm/models" + (refresh ? "?refresh=1" : ""));
+    state.models = m;
+    const ep = m.endpoint;
+    const keyText = ep.api_key_env ? (ep.api_key_env + (ep.key_present ? " is set" : " is NOT set")) : "no key variable";
+    const sel = $("model-select");
+    clearChildren(sel);
+    if (m.state === "loading" || m.state === "idle") {
+      setStatus($("endpoint-status"), "info", "Fetching models from " + ep.base_url + " ...");
+      sel.appendChild(new Option("Loading the list...", ""));
+      sel.disabled = true;
+      setTimeout(() => loadModels(false).catch(showError), 1500);
+      return;
+    }
+    if (m.state === "failed") {
+      const s = state.status;
+      setStatus($("endpoint-status"), "warn", "Could not list models at " + ep.base_url + " (" + keyText + "): " + m.error + "." +
+        (s && s.toy ? " The toy demo still works with offline templates." : " Edits on real models need a frontier model."));
+      sel.appendChild(new Option("No list available", ""));
+      sel.disabled = true;
+      $("model-save").disabled = true;
+      return;
+    }
+    const countText = m.reasoning_filter === "applied"
+      ? m.ids.length + " reasoning models (of " + m.total + " offered)"
+      : m.ids.length + " models (this endpoint does not mark reasoning models, so none were filtered out)";
+    setStatus($("endpoint-status"), "ok", ep.provider + " at " + ep.base_url + " (" + keyText + "): " + countText + ".");
+    sel.appendChild(new Option("Choose a model...", ""));
+    for (const id of m.ids) sel.appendChild(new Option(id, id));
+    if (m.selected && m.ids.includes(m.selected)) sel.value = m.selected;
+    sel.disabled = false;
+    $("model-save").disabled = !sel.value;
+    $("model-hint").textContent = m.selected ? ("Currently using " + m.selected + ".") : "Pick a model, then press 'Use this model'.";
+  }
+  $("model-select").addEventListener("change", () => { $("model-save").disabled = !$("model-select").value; });
+  $("model-refresh").addEventListener("click", () => { clearError(); loadModels(true).catch(showError); });
+  $("model-save").addEventListener("click", async () => {
+    clearError();
+    try {
+      const r = await api("POST", "/api/llm/select", { model: $("model-select").value });
+      $("model-hint").textContent = "Currently using " + r.selected + ".";
+      await loadStatus();
+    } catch (e) { showError(e); }
+  });
+
+  // --- step 2: modes ------------------------------------------------------------------------------------------
+  function applyMode() {
+    state.mode = radioValue("mode") || "fix";
+    $("mode-fix").hidden = state.mode !== "fix";
+    $("mode-facts").hidden = state.mode !== "facts";
+    $("mode-direction").hidden = state.mode !== "direction";
+    for (const el of document.querySelectorAll(".fix-only")) el.hidden = state.mode !== "fix";
+    for (const el of document.querySelectorAll(".other-mode")) el.hidden = state.mode === "fix";
+    markSteps();
+  }
+  for (const r of document.querySelectorAll('input[name="mode"]')) r.addEventListener("change", applyMode);
+
+  async function loadModes() {
+    const info = await api("GET", "/api/modes/info");
+    state.modes = info;
+    $("facts-toy-note").hidden = !info.note;
+    $("facts-toy-note").textContent = info.note || "";
+    $("facts-budget").value = info.limits.budget_percent;
+    $("dir-budget").value = info.limits.budget_percent;
+    $("facts-layers").placeholder = "automatic: " + info.default_fact_layers.join(",");
+    $("facts-layers-hint").textContent = "Editable layers: " + info.editable_layers.join(", ") + ". Leave Layers empty to use " + info.default_fact_layers.join(", ") + ".";
+    const sel = $("dir-layer");
+    clearChildren(sel);
+    sel.appendChild(new Option("suggested", ""));
+    for (const l of info.editable_layers) sel.appendChild(new Option("layer " + l, String(l)));
+  }
+
+  // --- intent (fix mode) ---------------------------------------------------------------------------------------
+  async function loadIntent() {
+    const i = await api("GET", "/api/intent");
+    state.intentExists = i.exists && !i.error;
+    $("intent-yaml").value = i.yaml || "";
+    if (!i.exists) setStatus($("intent-status"), "warn", "No intent yet. Draft one with your frontier model or write it in the editor, then save.");
+    else if (i.error) setStatus($("intent-status"), "bad", i.error);
+    else setStatus($("intent-status"), "ok", "Intent '" + i.summary.intent_id + "': " + i.summary.description + " (" + i.summary.targets + " target goal(s), " + i.summary.invariants + " invariant(s)).");
+    markSteps();
+  }
+  $("intent-draft").addEventListener("click", async () => {
+    clearError();
+    const btn = $("intent-draft");
+    btn.disabled = true;
+    setStatus($("intent-status"), "info", "Asking the frontier model to draft an intent...");
+    try {
+      const d = await api("POST", "/api/intent/draft", { description: $("intent-description").value });
+      $("intent-yaml").value = d.yaml;
+      setStatus($("intent-status"), "warn", "Draft from " + d.drafted_by + " loaded in the editor. Review it, then press 'Validate and save'.");
+    } catch (e) { showError(e); await loadIntent(); }
+    finally { btn.disabled = !(state.status && state.status.llm.selected); }
+  });
+  $("intent-save").addEventListener("click", async () => {
+    clearError();
+    try { await api("POST", "/api/intent/save", { yaml: $("intent-yaml").value }); await loadIntent(); await loadStatus(); }
+    catch (e) { showError(e); }
+  });
+
+  // --- facts (CR6) ---------------------------------------------------------------------------------------------
+  function csvField(s) { s = String(s || ""); return /[",\n|]/.test(s) && !s.includes("|") ? '"' + s.replace(/"/g, '""') + '"' : (/[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s); }
+  const CSV_HEADER = "prompt,new_object,old_object,subject,paraphrases,neighbours";
+  function factRow(f) { return [f.prompt, f.new_object, f.old_object || "", f.subject || "", (f.paraphrases || []).join("|"), (f.neighbours || []).join("|")].map(csvField).join(","); }
+  $("facts-example").addEventListener("click", () => {
+    if (!state.modes) return;
+    $("facts-csv").value = CSV_HEADER + "\n" + state.modes.examples.facts.map(factRow).join("\n") + "\n";
+    setStatus($("facts-status"), "info", "Example loaded. Check the table or preview the edit.");
+  });
+  $("ff-add").addEventListener("click", () => {
+    const f = { prompt: $("ff-prompt").value, subject: $("ff-subject").value, new_object: $("ff-new").value, old_object: $("ff-old").value,
+      paraphrases: $("ff-para").value.split("|").map((s) => s.trim()).filter(Boolean), neighbours: $("ff-neigh").value.split("|").map((s) => s.trim()).filter(Boolean) };
+    if (!f.prompt.trim() || !f.new_object.trim()) { setStatus($("facts-status"), "warn", "A fact needs a prompt and a new answer."); return; }
+    let text = $("facts-csv").value.trim();
+    if (!text) text = CSV_HEADER;
+    $("facts-csv").value = text + "\n" + factRow(f) + "\n";
+    for (const id of ["ff-prompt", "ff-subject", "ff-new", "ff-old", "ff-para", "ff-neigh"]) $(id).value = "";
+    setStatus($("facts-status"), "ok", "Fact added to the table.");
+  });
+  $("ff-draft").addEventListener("click", async () => {
+    clearError();
+    try {
+      const d = await api("POST", "/api/facts/draft", { prompt: $("ff-prompt").value, new_object: $("ff-new").value });
+      $("ff-para").value = d.paraphrases.join(" | ");
+      $("ff-neigh").value = d.neighbours.join(" | ");
+      setStatus($("facts-status"), "warn", "Drafted by " + d.drafted_by + ". Review the paraphrases and neighbours, then add the fact.");
+    } catch (e) { showError(e); }
+  });
+  function renderFactTable(facts, measured) {
+    const head = $("facts-head"), body = $("facts-body");
+    if (measured) headRow(head, ["Prompt", "New answer", "Before", "After", "Written", "Paraphrases written", "Neighbours unchanged"]);
+    else headRow(head, ["Prompt", "Subject", "New answer", "Old answer", "Paraphrases", "Neighbours"]);
+    clearChildren(body);
+    for (const f of facts) {
+      const tr = document.createElement("tr");
+      cell(tr, f.prompt, "mono");
+      if (measured) {
+        cell(tr, f.new_object, "answer");
+        cell(tr, f.before.answer, "answer");
+        cell(tr, f.after.answer, "answer");
+        const td = cell(tr, ""); badge(td, f.after.success ? "ok" : "bad", f.after.success ? "yes" : "no");
+        cell(tr, f.paraphrases.count ? pct(f.paraphrases.after) + " of " + f.paraphrases.count : "-", "num");
+        cell(tr, f.neighbourhood.count ? pct(f.neighbourhood.unchanged) + " of " + f.neighbourhood.count : "-", "num");
+      } else {
+        cell(tr, f.subject || "-"); cell(tr, f.new_object, "answer"); cell(tr, f.old_object || "-", "answer");
+        cell(tr, (f.paraphrases || []).length); cell(tr, (f.neighbours || []).length);
+      }
+      body.appendChild(tr);
+    }
+    $("facts-wrap").hidden = facts.length === 0;
+  }
+  $("facts-check").addEventListener("click", async () => {
+    clearError();
+    try {
+      const r = await api("POST", "/api/facts/parse_csv", { csv: $("facts-csv").value });
+      renderFactTable(r.facts, false);
+      setStatus($("facts-status"), "ok", r.facts.length + " fact(s) read. Preview the edit to measure them.");
+    } catch (e) { showError(e); }
+  });
+  function factBody() {
+    return { csv: $("facts-csv").value, layers: $("facts-layers").value.trim(), budget_percent: parseFloat($("facts-budget").value),
+      margin: parseFloat($("facts-margin").value), batch_id: "facts" };
+  }
+  $("facts-preview").addEventListener("click", async () => {
+    clearError();
+    $("facts-apply").disabled = true;
+    try {
+      const r = await api("POST", "/api/facts/preview", factBody());
+      $("facts-preview").disabled = true;
+      state.factJob = r.job_id;
+      watchJob(r.job_id, {
+        progress: { wrap: $("facts-progress-wrap"), bar: $("facts-progress"), text: $("facts-progress-text") },
+        finish: () => { $("facts-preview").disabled = false; },
+        done: renderFactPlan,
+        failed: (j) => setStatus($("facts-status"), j.state === "cancelled" ? "warn" : "bad", "Preview " + (j.state === "cancelled" ? "cancelled" : "failed") + ": " + j.error),
+      });
+    } catch (e) { showError(e); }
+  });
+  $("facts-cancel").addEventListener("click", async () => { try { await api("POST", "/api/jobs/" + state.factJob + "/cancel", {}); } catch (e) { showError(e); } });
+  function renderFactPlan(rep) {
+    state.factPlan = rep;
+    renderFactTable(rep.facts, true);
+    const s = rep.summary;
+    const drift = rep.drift.map((d) => d.tensor.replace(/^model\./, "") + " " + pct(d.before) + " -> " + pct(d.after)).join("; ");
+    const text = "Measured on a copy-on-write fork: " + pct(s.efficacy_after) + " of facts written (" + pct(s.efficacy_before) + " before), KL on general prompts " +
+      fmtSmall(s.kl_general) + ", " + rep.weights_targeted.toLocaleString() + " weights targeted of a " + rep.weights_budget.toLocaleString() +
+      " budget, layers " + rep.layers.join(", ") + ". Change from the original model: " + drift + ".";
+    setStatus($("facts-status"), rep.violations.length ? "warn" : "ok", text);
+    listInto($("facts-violations"), rep.violations.map((v) => "Not applicable: " + v));
+    listInto($("facts-notes"), rep.notes);
+    $("facts-apply").disabled = rep.violations.length > 0;
+  }
+  async function applyPlan(planId, statusEl, button) {
+    clearError();
+    button.disabled = true;
+    try {
+      const r = await api("POST", "/api/plans/apply", { plan_id: planId });
+      setStatus(statusEl, "ok", "Applied as patch " + r.patch_id.slice(0, 12) + ". Undo it or export it in step 5.");
+      await loadStatus(); await loadHistory();
+    } catch (e) { showError(e); }
+  }
+  $("facts-apply").addEventListener("click", () => { if (state.factPlan) applyPlan(state.factPlan.plan_id, $("facts-status"), $("facts-apply")); });
+
+  // --- direction (CR6) ------------------------------------------------------------------------------------------
+  function strengthText(v) { v = Number(v); if (v === 0) return "no change"; return (v > 0 ? "reduce it by " : "amplify it by ") + Math.round(Math.abs(v) * 100) + "%"; }
+  $("dir-strength").addEventListener("input", () => { $("dir-strength-out").textContent = strengthText($("dir-strength").value); $("dir-apply").disabled = true; });
+  $("dir-example").addEventListener("click", () => {
+    if (!state.modes) return;
+    const ex = state.modes.examples.direction;
+    $("dir-name").value = ex.name; $("dir-pos").value = ex.positives.join("\n"); $("dir-neg").value = ex.negatives.join("\n");
+  });
+  $("dir-draft").addEventListener("click", async () => {
+    clearError();
+    try {
+      const d = await api("POST", "/api/direction/draft", { description: $("dir-desc").value });
+      $("dir-pos").value = d.positives.join("\n"); $("dir-neg").value = d.negatives.join("\n");
+      setStatus($("dir-status"), "warn", "Drafted by " + d.drafted_by + ". Review both sets before previewing.");
+    } catch (e) { showError(e); }
+  });
+  $("dir-preview").addEventListener("click", async () => {
+    clearError();
+    $("dir-apply").disabled = true;
+    const layer = $("dir-layer").value;
+    const body = { name: $("dir-name").value.trim() || "behaviour", positives: lines($("dir-pos").value), negatives: lines($("dir-neg").value),
+      strength: parseFloat($("dir-strength").value), budget_percent: parseFloat($("dir-budget").value) };
+    if (layer !== "") body.layer = parseInt(layer, 10);
+    try {
+      const r = await api("POST", "/api/direction/preview", body);
+      $("dir-preview").disabled = true;
+      watchJob(r.job_id, {
+        progress: { wrap: $("dir-progress-wrap"), bar: $("dir-progress"), text: $("dir-progress-text") },
+        finish: () => { $("dir-preview").disabled = false; },
+        done: renderDirPlan,
+        failed: (j) => setStatus($("dir-status"), "bad", "Preview failed: " + j.error),
+      });
+    } catch (e) { showError(e); }
+  });
+  function renderDirPlan(rep) {
+    state.dirPlan = rep;
+    const body = $("dir-layers");
+    clearChildren(body);
+    const max = Math.max(...rep.analysis.layers.map((l) => Math.abs(l.separation)), 1e-9);
+    for (const l of rep.analysis.layers) {
+      const tr = document.createElement("tr");
+      cell(tr, "Layer " + l.layer + (l.layer === rep.layer ? " (edited)" : ""));
+      const td = document.createElement("td");
+      const bar = document.createElement("div"); bar.className = "bar"; bar.setAttribute("aria-hidden", "true");
+      bar.style.width = Math.max(2, Math.round(160 * Math.abs(l.separation) / max)) + "px";
+      td.appendChild(bar); tr.appendChild(td);
+      cell(tr, fmt(l.separation, 2), "num");
+      body.appendChild(tr);
+    }
+    $("dir-layers-wrap").hidden = false;
+    const ans = $("dir-answers");
+    clearChildren(ans);
+    for (const a of rep.answers) { const tr = document.createElement("tr"); cell(tr, a.prompt, "mono"); cell(tr, a.before, "answer"); cell(tr, a.after, "answer"); ans.appendChild(tr); }
+    $("dir-answers-wrap").hidden = rep.answers.length === 0;
+    const sh = rep.shift;
+    const gapBefore = sh.positives_before - sh.negatives_before, gapAfter = sh.positives_after - sh.negatives_after;
+    setStatus($("dir-status"), rep.violations.length ? "warn" : "ok", "Layer " + rep.layer + ", " + strengthText(rep.strength) + ": KL to the original on general prompts " +
+      fmtSmall(rep.kl_general) + " (on the behaviour prompts " + fmtSmall(rep.kl_positives) + "). Gap between the two sets along the direction: " +
+      fmt(gapBefore, 3) + " before, " + fmt(gapAfter, 3) + " after. " + rep.weights_targeted.toLocaleString() + " weights targeted.");
+    listInto($("dir-violations"), rep.violations.map((v) => "Not applicable: " + v));
+    $("dir-apply").disabled = rep.violations.length > 0;
+  }
+  $("dir-apply").addEventListener("click", () => { if (state.dirPlan) applyPlan(state.dirPlan.plan_id, $("dir-status"), $("dir-apply")); });
+
+  // --- step 3: diagnose ------------------------------------------------------------------------------------------
+  $("probe-run").addEventListener("click", async () => {
+    clearError();
+    const btn = $("probe-run");
+    btn.disabled = true;
+    setStatus($("probe-status"), "info", "Tracing activations on the failing and passing prompts...");
+    try {
+      const p = await api("POST", "/api/probe", { top: 6, columns: 8 });
+      renderProbe(p);
+      state.probed = true;
+      setStatus($("probe-status"), "ok", "Layer " + p.layers[0].layer + " diverges most. The repair step will target layers like these.");
+      markSteps();
+    } catch (e) { showError(e); $("probe-status").hidden = true; }
+    finally { btn.disabled = false; }
+  });
+  function renderProbe(p) {
+    const body = $("probe-body");
+    clearChildren(body);
+    const max = Math.max(...p.layers.map((l) => l.divergence), 1e-12);
+    for (const l of p.layers) {
+      const tr = document.createElement("tr");
+      cell(tr, "Layer " + l.layer);
+      const td = document.createElement("td");
+      const bar = document.createElement("div"); bar.className = "bar"; bar.setAttribute("aria-hidden", "true");
+      bar.style.width = Math.max(2, Math.round(160 * l.divergence / max)) + "px";
+      td.appendChild(bar); tr.appendChild(td);
+      cell(tr, fmt(l.divergence, 4), "num");
+      cell(tr, l.tensor, "mono");
+      cell(tr, l.culprit_columns.join(", "), "mono");
+      body.appendChild(tr);
+    }
+    $("probe-wrap").hidden = false;
+    $("probe-empty").hidden = true;
+  }
+
+  // --- step 4: repair ------------------------------------------------------------------------------------------
+  function renderLoop(result) {
+    const body = $("loop-body");
+    clearChildren(body);
+    for (const r of result.rows) {
+      const tr = document.createElement("tr");
+      cell(tr, r.iteration + 1, "num");
+      cell(tr, r.candidate === null ? "(no candidates: " + r.status + ")" : r.candidate + (r.source ? " [" + r.source + "]" : ""));
+      const td = cell(tr, "");
+      badge(td, r.status === "committed" ? "ok" : (String(r.status).startsWith("feasible") ? "info" : "bad"),
+        r.status === "committed" ? ("committed " + (r.patch_id || "").slice(0, 10)) : r.status);
+      cell(tr, r.target_score === null ? "-" : (r.target_score >= 0 ? "met" : fmt(r.target_score, 3)), "num");
+      cell(tr, budgetText(r.invariant_degradation), "num");
+      cell(tr, r.modified_params === undefined ? "-" : r.modified_params.toLocaleString(), "num");
+      body.appendChild(tr);
+    }
+    $("loop-wrap").hidden = false;
+    $("loop-empty").hidden = true;
+  }
+  let loopJob = null;
+  $("loop-cancel").addEventListener("click", async () => {
+    try { await api("POST", "/api/jobs/" + loopJob + "/cancel", {}); $("loop-progress-text").textContent = "Cancelling at the next safe point..."; }
+    catch (e) { showError(e); }
+  });
+  $("loop-run").addEventListener("click", async () => {
+    clearError();
+    const proposer = radioValue("proposer");
+    if (!proposer) { showError(new Error("Choose a frontier model in step 1: edits on real models are proposed by it.")); return; }
+    const body = {
+      iterations: parseInt($("loop-iterations").value, 10), candidates: parseInt($("loop-candidates").value, 10),
+      use_llm: proposer === "llm", approve_each: $("opt-approve").checked, dry_run: $("opt-dry").checked,
+      protected: $("opt-protected").value.trim(),
+    };
+    try {
+      const r = await api("POST", "/api/loop", body);
+      loopJob = r.job_id;
+      $("loop-run").disabled = true;
+      $("loop-status").hidden = true;
+      $("loop-empty").hidden = true;
+      state.jobState = "running"; markSteps();
+      watchJob(r.job_id, {
+        progress: { wrap: $("loop-progress-wrap"), bar: $("loop-progress"), text: $("loop-progress-text") },
+        approval: $("approval"),
+        finish: () => { $("loop-run").disabled = false; state.jobState = null; markSteps(); },
+        done: async (res) => {
+          if (res.rows.length === 0) {
+            setStatus($("loop-status"), "ok", "The goals were already met at the current state, so nothing was changed. To try another repair, restore the original model in step 5 first.");
+            return;
+          }
+          renderLoop(res);
+          state.repaired = !res.dry_run && !res.cancelled;
+          const metrics = Object.entries(res.target_metrics).map(([k, v]) => k + " " + fmt(v, 3)).join(", ");
+          const head = res.dry_run ? "Dry run finished: nothing was changed. " : (res.cancelled ? "Cancelled: only edits you had approved before were kept. " :
+            (res.converged ? "Goals met. " : "Goals not fully met yet; run more iterations or refine the intent. "));
+          setStatus($("loop-status"), res.converged && !res.dry_run ? "ok" : "warn", head + "Proposer: " + res.proposer + ". Final targets: " + (metrics || "-") + ".");
+          await loadStatus(); await loadHistory();
+        },
+        failed: (j) => setStatus($("loop-status"), "bad", "Repair failed: " + j.error),
+      });
+    } catch (e) { showError(e); }
+  });
+
+  // --- step 5 -----------------------------------------------------------------------------------------------
+  function renderAnswers(tbodyId, wrapId, rows, withOriginal) {
+    const body = $(tbodyId);
+    clearChildren(body);
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      cell(tr, r.prompt, "mono");
+      cell(tr, r.role === "failing" ? "should change" : "must not change");
+      if (withOriginal) { cell(tr, r.original, "answer"); cell(tr, r.current, "answer"); cell(tr, r.changed ? "yes" : "no"); }
+      else { cell(tr, r.expected, "answer"); cell(tr, r.current, "answer"); }
+      body.appendChild(tr);
+    }
+    $(wrapId).hidden = rows.length === 0;
+  }
+  async function runCompare(statusId, tbodyId, wrapId, withOriginal) {
+    clearError();
+    setStatus($(statusId), "info", "Generating answers...");
+    try {
+      const c = await api("POST", "/api/compare", {});
+      renderAnswers(tbodyId, wrapId, c.rows, withOriginal);
+      const changed = c.rows.filter((r) => r.changed).length;
+      setStatus($(statusId), "ok", withOriginal ? (changed + " of " + c.rows.length + " answers differ from the original model (" + c.settings.decoding + ", " + c.settings.max_new_tokens + " tokens).")
+        : ("Current answers for " + c.rows.length + " prompts (" + c.settings.decoding + ", " + c.settings.max_new_tokens + " tokens)."));
+    } catch (e) { showError(e); $(statusId).hidden = true; }
+  }
+  $("preview-run").addEventListener("click", () => runCompare("preview-status", "preview-body", "preview-wrap", false));
+  $("compare-run").addEventListener("click", () => runCompare("compare-status", "compare-body", "compare-wrap", true));
+
+  let examples = [];
+  async function loadExamples() {
+    const e = await api("GET", "/api/examples");
+    examples = e.examples;
+    const sel = $("example-select");
+    clearChildren(sel);
+    sel.appendChild(new Option("Choose an example...", ""));
+    for (const ex of examples) sel.appendChild(new Option(ex.title, ex.id));
+  }
+  $("example-load").addEventListener("click", () => {
+    const ex = examples.find((x) => x.id === $("example-select").value);
+    if (!ex) return;
+    $("intent-yaml").value = ex.yaml;
+    setStatus($("intent-status"), "warn", "Example '" + ex.title + "' loaded in the editor. Adapt it, then press 'Validate and save'.");
+  });
+
+  async function loadLast() {
+    const last = await api("GET", "/api/last");
+    const stale = (rec) => rec && rec.measured_at_head !== last.head ? " (measured at an earlier version of the model)" : "";
+    if (last.probe && last.probe.layers && last.probe.layers.length) {
+      renderProbe(last.probe);
+      state.probed = !stale(last.probe);
+      setStatus($("probe-status"), "info", "Last diagnosis restored" + stale(last.probe) + ".");
+    }
+    if (last.run && last.run.rows && last.run.rows.length) {
+      renderLoop(last.run);
+      setStatus($("loop-status"), "info", "Last repair restored" + stale(last.run) + ". Proposer: " + last.run.proposer + ".");
+    }
+    markSteps();
+  }
+
+  async function loadHistory() {
+    const h = await api("GET", "/api/history");
+    const body = $("history-body");
+    clearChildren(body);
+    for (const c of h.commits) {
+      const tr = document.createElement("tr");
+      cell(tr, String(c.patch_id).slice(0, 12) + (c.patch_id === h.head ? " (current)" : ""), "mono");
+      cell(tr, c.intent);
+      cell(tr, c.modified_params === undefined ? "-" : Number(c.modified_params).toLocaleString(), "num");
+      cell(tr, c.rationale);
+      const td = cell(tr, "");
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.className = "small";
+      btn.textContent = c.patch_id === h.head ? "Current" : "Restore";
+      btn.disabled = c.patch_id === h.head;
+      btn.addEventListener("click", () => restore(c.patch_id));
+      td.appendChild(btn);
+      body.appendChild(tr);
+    }
+    $("history-wrap").hidden = h.commits.length === 0;
+    $("history-empty").hidden = h.commits.length > 0;
+    $("restore-root").disabled = h.head === "ROOT";
+  }
+  async function restore(ref) {
+    clearError();
+    try {
+      const r = await api("POST", "/api/checkout", { ref });
+      setStatus($("keep-status"), "ok", r.head === "ROOT" ? "Original model restored exactly." : ("Restored patch " + r.head.slice(0, 12) + " exactly."));
+      await loadStatus(); await loadHistory();
+    } catch (e) { showError(e); }
+  }
+  $("restore-root").addEventListener("click", () => restore("ROOT"));
+  $("header-restore").addEventListener("click", () => restore("ROOT"));
+  $("export-run").addEventListener("click", async () => {
+    clearError();
+    setStatus($("keep-status"), "info", "Exporting...");
+    try {
+      const r = await api("POST", "/api/export", { format: $("export-format").value });
+      setStatus($("keep-status"), "ok", "Exported state " + r.patch_id.slice(0, 12) + " as " + r.format + " to " + r.path + " (inside the workspace).");
+    } catch (e) { showError(e); $("keep-status").hidden = true; }
+  });
+
+  // --- workspaces (CR2) ----------------------------------------------------------------------------------------
+  function fillDevices(devices) {
+    for (const id of ["nw-device", "nw-folder-device"]) {
+      const sel = $(id);
+      const keep = sel.value;
+      clearChildren(sel);
+      for (const d of devices) sel.appendChild(new Option(d.device + " (" + gb(d.free_bytes) + " free)", d.device));
+      if (keep) sel.value = keep;
+    }
+  }
+  async function loadWorkspaces() {
+    const w = await api("GET", "/api/workspaces");
+    state.workspaces = w;
+    $("ws-home").textContent = w.home;
+    fillDevices(w.devices);
+    const body = $("ws-list");
+    clearChildren(body);
+    for (const r of w.workspaces) {
+      const tr = document.createElement("tr");
+      cell(tr, r.name + (r.id === w.current ? " (open)" : ""));
+      cell(tr, r.model, "mono");
+      cell(tr, r.revision ? r.revision.slice(0, 12) : "-", "mono");
+      const td = cell(tr, "");
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.className = "small"; btn.textContent = r.id === w.current ? "Already open" : "Open";
+      btn.disabled = r.id === w.current;
+      btn.addEventListener("click", () => openWorkspace(r.id, r.name));
+      td.appendChild(btn);
+      body.appendChild(tr);
+    }
+    $("ws-list-wrap").hidden = w.workspaces.length === 0;
+    $("ws-list-empty").hidden = w.workspaces.length > 0;
+    const sel = $("nw-folder");
+    clearChildren(sel);
+    if (w.model_folders.length === 0) sel.appendChild(new Option("No model folders yet", ""));
+    for (const f of w.model_folders) sel.appendChild(new Option(f.name + (f.adapter ? "" : " (unsupported architecture)") + " - " + gb(f.size_bytes), f.name));
+    if (state.status && state.status.workspace) {
+      const f = await api("GET", "/api/workspace/facts");
+      $("ws-none").hidden = true;
+      dlInto($("ws-facts"), [["Workspace", state.status.workspace], ["Model", f.model], ["Source", f.source], ["Revision", f.revision], ["Licence", f.license],
+        ["Family", f.family], ["Adapter", f.adapter], ["Layers", f.layers], ["Parameters", Number(f.parameters).toLocaleString()],
+        ["Data type", f.dtype], ["Device", f.device]]);
+    } else { $("ws-none").hidden = false; $("ws-facts").hidden = true; }
+  }
+  async function reloadAll() {
+    await loadStatus();
+    if (!state.status.workspace) { showView("workspaces"); return; }
+    await Promise.all([loadModels(false), loadIntent(), loadHistory(), loadExamples(), loadModes(), loadFactoryExamples()]);
+    await loadLast();
+    applyMode();
+  }
+  function workspaceJob(jobId, statusEl, okText) {
+    let wsJob = jobId;
+    $("nw-cancel").onclick = async () => { try { await api("POST", "/api/jobs/" + wsJob + "/cancel", {}); } catch (e) { showError(e); } };
+    watchJob(jobId, {
+      progress: { wrap: $("nw-progress-wrap"), bar: $("nw-progress"), text: $("nw-progress-text") },
+      finish: () => { $("nw-create").disabled = false; },
+      done: async (res) => {
+        setStatus(statusEl, "ok", okText + " " + res.workspace + ".");
+        $("nw-name").value = "";
+        await reloadAll();
+        showView("edit");  // the next step after opening a workspace is describing the change
+      },
+      failed: (j) => setStatus(statusEl, j.state === "cancelled" ? "warn" : "bad", (j.state === "cancelled" ? "Cancelled: " : "Failed: ") + j.error),
+    });
+  }
+  async function openWorkspace(id, name) {
+    clearError();
+    try {
+      const r = await api("POST", "/api/workspaces/open", { id });
+      setStatus($("ws-open-status"), "info", "Opening " + name + " (loading the model)...");
+      workspaceJob(r.job_id, $("ws-open-status"), "Opened");
+    } catch (e) { showError(e); }
+  }
+  function syncSource() {
+    const src = radioValue("nw-source");
+    $("nw-hub").hidden = src !== "hub";
+    $("nw-folder-wrap").hidden = src !== "folder";
+    $("nw-create").textContent = src === "hub" ? "Download and create" : "Create the workspace";
+    $("nw-create").disabled = src === "hub" && !state.check;
+  }
+  for (const r of document.querySelectorAll('input[name="nw-source"]')) r.addEventListener("change", syncSource);
+  for (const id of ["nw-repo", "nw-rev", "nw-device"]) $(id).addEventListener("change", () => { state.check = null; syncSource(); });
+  $("nw-check").addEventListener("click", async () => {
+    clearError();
+    state.check = null;
+    syncSource();
+    setStatus($("nw-check-status"), "info", "Reading the model's metadata from the Hub...");
+    try {
+      const c = await api("POST", "/api/models/check", { repo: $("nw-repo").value, revision: $("nw-rev").value, device: $("nw-device").value });
+      state.check = c;
+      dlInto($("nw-check-facts"), [["Download size", gb(c.download_bytes) + " (" + c.files.length + " files, safetensors weights only)"],
+        ["Parameters", c.parameters ? Number(c.parameters).toLocaleString() : "not given by the Hub"],
+        ["Weights in bfloat16", gb(c.weights_bytes_bf16) + (c.approximate ? " (approximate)" : "")],
+        ["Memory to edit", gb(c.needed_bytes) + " (two copies of the weights)"], ["Free on " + c.device, gb(c.free_bytes)],
+        ["Licence", c.license || "not stated in the model card"], ["Pinned revision", c.revision],
+        ["Architecture", (c.model_type || "unknown") + (c.adapter ? " (supported)" : " (not supported)")]]);
+      const warnings = c.warnings.slice();
+      if (c.suggestion) warnings.push(c.suggestion);
+      listInto($("nw-check-warnings"), warnings);
+      setStatus($("nw-check-status"), warnings.length ? "warn" : "ok", warnings.length ? "Checked. Read the warnings before downloading." : "Checked. Nothing downloads until you press 'Download and create'.");
+      syncSource();
+    } catch (e) { showError(e); $("nw-check-status").hidden = true; }
+  });
+  $("nw-create").addEventListener("click", async () => {
+    clearError();
+    const src = radioValue("nw-source");
+    const body = { kind: src, name: $("nw-name").value.trim(), device: src === "hub" ? $("nw-device").value : (src === "folder" ? $("nw-folder-device").value : "cpu") };
+    if (src === "hub") { if (!state.check) return; body.check_id = state.check.check_id; }
+    if (src === "folder") body.folder = $("nw-folder").value;
+    try {
+      const r = await api("POST", "/api/workspaces/create", body);
+      $("nw-create").disabled = true;
+      setStatus($("nw-status"), "info", src === "hub" ? "Downloading and verifying every file..." : "Creating the workspace...");
+      workspaceJob(r.job_id, $("nw-status"), "Created and opened");
+    } catch (e) { showError(e); }
+  });
+
+  // --- factory (CR9) -------------------------------------------------------------------------------------------
+  let fxExamples = [];
+  async function loadFactoryExamples() {
+    const e = await api("GET", "/api/factory/examples");
+    fxExamples = e.examples;
+    const sel = $("fx-example");
+    clearChildren(sel);
+    for (const ex of fxExamples) sel.appendChild(new Option(ex.title, ex.id));
+    if (!$("fx-yaml").value && fxExamples.length) $("fx-yaml").value = (state.status && state.status.toy) ? fxExamples[0].yaml : "";
+  }
+  $("fx-load").addEventListener("click", () => { const ex = fxExamples.find((x) => x.id === $("fx-example").value); if (ex) $("fx-yaml").value = ex.yaml; });
+  $("fx-draft").addEventListener("click", async () => {
+    clearError();
+    try {
+      const d = await api("POST", "/api/factory/draft_prompts", { suite_yaml: $("fx-yaml").value });
+      $("fx-drafts").textContent = "Drafted by " + d.drafted_by + " from the training tasks only. Paste the ones you like under prompt_baselines:\n\n" + d.prompts.map((p) => "- " + JSON.stringify(p)).join("\n");
+      $("fx-drafts").hidden = false;
+    } catch (e) { showError(e); }
+  });
+  async function loadFactoryRuns() {
+    const r = await api("GET", "/api/factory/runs");
+    const sel = $("fx-runs");
+    clearChildren(sel);
+    if (r.runs.length === 0) sel.appendChild(new Option("No runs yet", ""));
+    for (const run of r.runs) sel.appendChild(new Option(run.run_id + (run.suite_id ? " (" + run.suite_id + ")" : "") + (run.verdict ? "" : " (unfinished)"), run.run_id));
+    $("fx-open").disabled = r.runs.length === 0;
+    try { const d = await api("GET", "/api/factory/destination?kind=" + $("fx-kind").value); $("fx-dest").textContent = d.path; } catch (e) { $("fx-dest").textContent = "-"; }
+  }
+  $("fx-kind").addEventListener("change", () => loadFactoryRuns().catch(showError));
+  $("fx-open").addEventListener("click", async () => {
+    clearError();
+    try { const r = await api("GET", "/api/factory/report?run=" + encodeURIComponent($("fx-runs").value)); renderFactory(r.report); } catch (e) { showError(e); }
+  });
+  let fxJob = null;
+  $("fx-cancel").addEventListener("click", async () => { try { await api("POST", "/api/jobs/" + fxJob + "/cancel", {}); } catch (e) { showError(e); } });
+  $("fx-run").addEventListener("click", async () => {
+    clearError();
+    const proposer = radioValue("fx-proposer");
+    if (!proposer) { showError(new Error("Choose a frontier model in Edit, step 1: repairs on real models are proposed by it.")); return; }
+    try {
+      const r = await api("POST", "/api/factory/run", { suite_yaml: $("fx-yaml").value, use_llm: proposer === "llm", approve_each: $("fx-approve").checked,
+        iterations: parseInt($("fx-iterations").value, 10), candidates: parseInt($("fx-candidates").value, 10) });
+      fxJob = r.job_id;
+      $("fx-run").disabled = true;
+      setStatus($("fx-status"), "info", "Running: baseline, prompt-only baseline, repair on failing training tasks, then the edited model.");
+      watchJob(r.job_id, {
+        progress: { wrap: $("fx-progress-wrap"), bar: $("fx-progress"), text: $("fx-progress-text") },
+        approval: $("fx-approval"),
+        finish: () => { $("fx-run").disabled = false; },
+        done: async (rep) => { $("fx-status").hidden = true; renderFactory(rep); await loadStatus(); await loadHistory(); await loadFactoryRuns(); },
+        failed: (j) => setStatus($("fx-status"), j.state === "cancelled" ? "warn" : "bad", "Factory run " + (j.state === "cancelled" ? "cancelled" : "failed") + ": " + j.error),
+      });
+    } catch (e) { showError(e); }
+  });
+  function renderFactory(rep) {
+    state.fxReport = rep;
+    $("fx-empty").hidden = true;
+    $("fx-report").hidden = false;
+    const v = rep.verdict;
+    setStatus($("fx-verdict"), v.packaging_allowed ? "ok" : "warn", v.messages.join(" "));
+    const sum = $("fx-summary");
+    clearChildren(sum);
+    const rows = [["Baseline (the model as it was)", rep.baseline.train, rep.baseline.heldout]];
+    if (rep.prompt_only && rep.prompt_only.configured) rows.push(["Prompt-only baseline (best system prompt)", rep.prompt_only.train, rep.prompt_only.heldout]);
+    if (rep.after) rows.push(["After the edit", rep.after.train, rep.after.heldout]);
+    for (const [name, tr_, ho] of rows) { const tr = document.createElement("tr"); cell(tr, name); cell(tr, pct(tr_), "num"); cell(tr, pct(ho), "num"); sum.appendChild(tr); }
+    listInto($("fx-notes"), rep.notes || []);
+    const tasks = $("fx-tasks");
+    clearChildren(tasks);
+    const after = {};
+    for (const t of (rep.after ? rep.after.tasks : [])) after[t.task] = t;
+    for (const t of rep.baseline.tasks) {
+      const tr = document.createElement("tr");
+      cell(tr, t.task, "mono"); cell(tr, t.split === "heldout" ? "held-out" : "training");
+      const b = cell(tr, ""); badge(b, t.passed ? "ok" : "bad", t.passed ? "pass" : "fail"); b.appendChild(document.createTextNode(" " + t.reason));
+      const a = cell(tr, "");
+      if (after[t.task]) { badge(a, after[t.task].passed ? "ok" : "bad", after[t.task].passed ? "pass" : "fail"); a.appendChild(document.createTextNode(" " + after[t.task].reason)); }
+      else a.textContent = "-";
+      cell(tr, (after[t.task] || t).completion, "answer");
+      tasks.appendChild(tr);
+    }
+    $("fx-package").disabled = !v.packaging_allowed;
+  }
+  $("fx-package").addEventListener("click", async () => {
+    clearError();
+    if (!state.fxReport) return;
+    try {
+      const r = await api("POST", "/api/factory/package", { run_id: state.fxReport.run_id, kind: $("fx-kind").value });
+      setStatus($("fx-package-status"), "ok", "Package written to " + r.path + " (inside the workspace): " + r.files.join(", ") + ". Tool name: " + r.tool_name + ".");
+      await loadFactoryRuns();
+    } catch (e) { showError(e); }
+  });
+
+  // --- self-improvement (CR10) ------------------------------------------------------------------------------------
+  let siJob = null;
+  async function loadImprove() {
+    const s = await api("GET", "/api/selfimprove/status");
+    const tl = $("si-timeline");
+    clearChildren(tl);
+    for (const e of s.timeline.slice().reverse()) {
+      const tr = document.createElement("tr");
+      cell(tr, e.step, "num"); cell(tr, e.kind);
+      const r = cell(tr, "");
+      if (e.kind === "rollback") badge(r, "info", "rolled back");
+      else badge(r, e.promoted ? "ok" : "bad", e.promoted ? "promoted" : "not promoted");
+      cell(tr, e.generation, "num"); cell(tr, e.anchor_kl === null ? "-" : fmtSmall(e.anchor_kl), "num"); cell(tr, fmt(e.hit_rate, 3), "num");
+      const td = cell(tr, "");
+      if (e.trials && e.trials.length) {
+        const det = document.createElement("details");
+        const sm = document.createElement("summary"); sm.textContent = e.trials.length + " candidate(s)" + (e.note ? ": " + e.note : ""); det.appendChild(sm);
+        const ul = document.createElement("ul");
+        for (const t of e.trials) {
+          const li = document.createElement("li");
+          // Gain and KL exist only for candidates that were evaluated; budget or protection rejections never ran.
+          const evaluated = t.promoted || /^(Passed|Forgetting|Anchor KL|No gain|Rolled back)/.test(t.reason || "");
+          li.textContent = (t.promoted ? "promoted" : (t.reason || "rejected")) + (evaluated && !/\(gain/.test(t.reason || "") ? " (gain " + fmtSmall(t.gain) + ", KL " + fmtSmall(t.kl) + ")" : "");
+          ul.appendChild(li);
+        }
+        det.appendChild(ul); td.appendChild(det);
+      } else td.textContent = e.note || "-";
+      tl.appendChild(tr);
+    }
+    $("si-wrap").hidden = s.timeline.length === 0;
+    $("si-empty").hidden = s.timeline.length > 0;
+    const st = s.state;
+    const running = !!s.running;
+    $("si-pause").disabled = !running; $("si-stop").disabled = !running; $("si-start").disabled = running;
+    $("si-rollback").disabled = running || !s.rollback;
+    if (running && siJob !== s.running) { siJob = s.running; watchImprove(siJob); }
+    if (st) setStatus($("si-status"), "info", "Generation " + st.generation + " after " + st.steps_run + " step(s); " + st.rollback_points + " rollback point(s); surgical hit rate " + fmt(st.surgical_hit_rate, 3) + "." + (s.guardrails ? " Last run: proposer " + s.guardrails.proposer + ", anchor KL limit " + s.guardrails.max_kl + "." : ""));
+    else setStatus($("si-status"), "info", "No run yet. The first start builds the anchor vault from the original model.");
+    state.siRollback = s.rollback;
+  }
+  function watchImprove(jobId) {
+    $("si-pause").disabled = false; $("si-stop").disabled = false; $("si-start").disabled = true;
+    watchJob(jobId, {
+      progress: { wrap: $("si-progress-wrap"), bar: $("si-progress"), text: $("si-progress-text") },
+      finish: () => { siJob = null; },
+      done: async (res) => { await loadImprove(); setStatus($("si-status"), "ok", "Run ended (" + res.ended + ") at generation " + res.generation + " after " + res.steps_run + " step(s). Proposer: " + res.proposer + "."); },
+      failed: async (j) => { await loadImprove(); setStatus($("si-status"), j.state === "cancelled" ? "warn" : "bad", "Run " + j.state + ": " + j.error); },
+    });
+  }
+  $("si-start").addEventListener("click", async () => {
+    clearError();
+    const proposer = radioValue("si-proposer");
+    if (!proposer) { showError(new Error("Choose a frontier model in Edit, step 1: edits on real models are proposed by it.")); return; }
+    try {
+      const r = await api("POST", "/api/selfimprove/start", { generations: parseInt($("si-generations").value, 10), max_kl: parseFloat($("si-kl").value),
+        candidates: parseInt($("si-candidates").value, 10), meta_fraction: parseFloat($("si-meta").value), protected: $("si-protected").value.trim(),
+        forgetting: $("si-forgetting").value, max_forgetting_drop: parseFloat($("si-drop").value), use_llm: proposer === "llm" });
+      siJob = r.job_id;
+      watchImprove(r.job_id);
+    } catch (e) { showError(e); }
+  });
+  $("si-pause").addEventListener("click", async () => {
+    try { await api("POST", "/api/jobs/" + siJob + "/pause", {}); setStatus($("si-status"), "info", "Pausing after the current generation; all state is saved."); } catch (e) { showError(e); }
+  });
+  $("si-stop").addEventListener("click", async () => {
+    try { await api("POST", "/api/jobs/" + siJob + "/cancel", {}); setStatus($("si-status"), "warn", "Stopping at the next candidate; nothing from this generation will be promoted."); } catch (e) { showError(e); }
+  });
+  $("si-rollback").addEventListener("click", () => {
+    const p = state.siRollback;
+    if (!p) return;
+    $("si-rollback-text").textContent = "This undoes the promotion from generation " + p.generation + " to " + (p.generation + 1) + ": the weights and nullspace locks return bit-exactly to generation " + p.generation + ". Tensors restored: " +
+      p.tensors.join(", ") + ". The undone edit: " + (p.hypothesis || "(no description)") + (p.gain !== null ? " (measured gain " + fmt(p.gain, 4) + ")." : ".");
+    $("si-rollback-box").hidden = false;
+    $("si-rollback-yes").focus();
+  });
+  $("si-rollback-no").addEventListener("click", () => { $("si-rollback-box").hidden = true; });
+  $("si-rollback-yes").addEventListener("click", async () => {
+    $("si-rollback-box").hidden = true;
+    try { const r = await api("POST", "/api/selfimprove/rollback", { confirm: true }); await loadImprove(); setStatus($("si-status"), "ok", "Rolled back generation(s) " + r.undone.join(", ") + "; now at generation " + r.generation + "."); }
+    catch (e) { showError(e); }
+  });
+
+  // Tables scroll sideways on phones: each scroll area must be reachable and named for keyboard and screen reader users.
+  for (const wrap of document.querySelectorAll(".table-wrap")) {
+    const caption = wrap.querySelector("caption");
+    wrap.tabIndex = 0;
+    wrap.setAttribute("role", "region");
+    wrap.setAttribute("aria-label", caption ? caption.textContent.trim() : "Table");
+  }
+
+  // --- start -------------------------------------------------------------------------------------------------
+  (async () => {
+    try {
+      await reloadAll();
+      if (state.status.workspace) showView("edit"); else showView("workspaces");
+    } catch (e) { showError(e); }
+  })();
+})();
+</script>
+</body>
+</html>

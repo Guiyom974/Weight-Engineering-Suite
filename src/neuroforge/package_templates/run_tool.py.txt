@@ -1,0 +1,34 @@
+"""Command-line tool that answers with the edited local model packaged by the Weight Engineering Model Factory.
+
+A fixed template: the tool's settings are read from tool_config.json next to it and the weight edit from
+patch.sparse.safetensors. Requires the weight-engineering-suite package in the Python that runs it.
+
+Run: python run_tool.py "your prompt"     (or pipe the prompt on stdin)
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+CONFIG = json.loads((HERE / "tool_config.json").read_text(encoding="utf-8"))
+
+
+def main() -> None:
+    """Print the edited model's greedy answer to the prompt given as argument or on stdin."""
+    from libweightspace.loading import load_model
+    from neuroforge.exporter import load_sparse_delta
+    from neuroforge.factory import generate_completion
+    from neuroforge.weight_git import apply_deltas_inplace
+
+    prompt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else sys.stdin.read()
+    loaded = load_model(CONFIG["load_spec"], CONFIG.get("device", "cpu"), bool(CONFIG.get("demo_defect", False)))
+    apply_deltas_inplace(loaded.model, load_sparse_delta(HERE / "patch.sparse.safetensors"))
+    print(generate_completion(loaded.model, loaded.tokenizer, str(CONFIG.get("prefix", "")) + prompt,
+                              int(CONFIG.get("max_new_tokens", 64)), list(CONFIG.get("stop", []))))
+
+
+if __name__ == "__main__":
+    main()
